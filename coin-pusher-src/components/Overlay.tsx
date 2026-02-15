@@ -179,42 +179,6 @@ export const Overlay: React.FC<OverlayProps> = ({
         </div>
       </div>
 
-      {/* --- PAYTABLE BAR --- */}
-      <div className="relative z-20 w-full bg-black/90 border-b border-amber-500/40 backdrop-blur-md pointer-events-auto shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-center gap-4 sm:gap-8 px-3 py-2 sm:py-2.5 overflow-x-auto text-[10px] sm:text-xs">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <img src="/junk.png" alt="JUNK" className="w-5 h-5 rounded-full ring-1 ring-amber-500/40" />
-            <span className="text-amber-300 font-bold font-[Orbitron] tracking-wider">JUNK</span>
-          </div>
-          <div className="h-4 w-px bg-amber-500/30 shrink-0" />
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-slate-400">Drop</span>
-            <span className="text-amber-200 font-mono font-bold">1</span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-slate-400">Collect</span>
-            <span className="text-emerald-400 font-mono font-bold">+1</span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-slate-400">10x Streak</span>
-            <span className="text-emerald-300 font-mono font-bold">+5</span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-slate-400">Bump</span>
-            <span className="text-rose-400 font-mono font-bold">-25</span>
-          </div>
-          <div className="h-4 w-px bg-amber-500/30 shrink-0" />
-          <div className="flex items-center gap-1.5 shrink-0">
-            <img src="/trashcoin.png" alt="TRASHCOIN" className="w-5 h-5 rounded-full ring-1 ring-yellow-500/40" />
-            <span className="text-yellow-300 font-bold font-[Orbitron] tracking-wider">TRASH</span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-slate-400">6%</span>
-            <span className="text-yellow-200 font-mono font-bold">5x</span>
-          </div>
-        </div>
-      </div>
-
       {/* --- CENTER: Message & Crosshair --- */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {state.isPaused ? (
@@ -238,8 +202,46 @@ export const Overlay: React.FC<OverlayProps> = ({
           )}
       </div>
 
-      {/* --- BOTTOM HUD --- */}
-      <div className="relative z-10 w-full px-3 py-3 sm:p-8 flex items-end justify-between gap-2">
+      {/* --- PAYTABLE + BOTTOM HUD wrapper --- */}
+      <div className="relative z-20 flex flex-col">
+        {/* --- PAYTABLE BAR --- */}
+        <div className="w-full bg-black/90 border-t border-amber-500/40 backdrop-blur-md pointer-events-auto shadow-[0_-2px_12px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center justify-center gap-4 sm:gap-8 px-3 py-2 sm:py-2.5 overflow-x-auto text-[10px] sm:text-xs">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <img src="/junk.png" alt="JUNK" className="w-5 h-5 rounded-full ring-1 ring-amber-500/40" />
+              <span className="text-amber-300 font-bold font-[Orbitron] tracking-wider">JUNK</span>
+            </div>
+            <div className="h-4 w-px bg-amber-500/30 shrink-0" />
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-slate-400">Drop</span>
+              <span className="text-amber-200 font-mono font-bold">1</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-slate-400">Collect</span>
+              <span className="text-emerald-400 font-mono font-bold">+1</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-slate-400">10x Streak</span>
+              <span className="text-emerald-300 font-mono font-bold">+5</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-slate-400">Bump</span>
+              <span className="text-rose-400 font-mono font-bold">-25</span>
+            </div>
+            <div className="h-4 w-px bg-amber-500/30 shrink-0" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <img src="/trashcoin.png" alt="TRASHCOIN" className="w-5 h-5 rounded-full ring-1 ring-yellow-500/40" />
+              <span className="text-yellow-300 font-bold font-[Orbitron] tracking-wider">TRASH</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-slate-400">6%</span>
+              <span className="text-yellow-200 font-mono font-bold">5x</span>
+            </div>
+          </div>
+        </div>
+
+        {/* --- BOTTOM HUD --- */}
+        <div className="w-full px-3 py-3 sm:p-8 flex items-end justify-between gap-2">
 
         {/* Controls */}
         <div className="flex flex-wrap gap-1.5 sm:gap-3 pointer-events-auto">
@@ -274,6 +276,7 @@ export const Overlay: React.FC<OverlayProps> = ({
                 v3.0.0 <span className="text-cyan-800 mx-2">//</span> GORBAGANA
              </div>
         </div>
+      </div>
       </div>
 
       {/* --- POPUP: OUT OF JUNK (BUMP) --- */}
