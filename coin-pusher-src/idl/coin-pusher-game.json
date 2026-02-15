@@ -1,0 +1,314 @@
+{
+  "address": "11111111111111111111111111111111",
+  "metadata": {
+    "name": "coin_pusher_game",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "initializeGame",
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
+      "accounts": [
+        {
+          "name": "gameState",
+          "writable": true,
+          "signer": false,
+          "isOptional": false
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true,
+          "isOptional": false
+        },
+        {
+          "name": "systemProgram",
+          "writable": false,
+          "signer": false,
+          "isOptional": false
+        }
+      ],
+      "args": [
+        {
+          "name": "initialBalance",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "recordCoinCollection",
+      "discriminator": [80, 203, 75, 136, 210, 191, 179, 248],
+      "accounts": [
+        {
+          "name": "gameState",
+          "writable": true,
+          "signer": false,
+          "isOptional": false
+        },
+        {
+          "name": "player",
+          "writable": false,
+          "signer": true,
+          "isOptional": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "recordScore",
+      "discriminator": [191, 80, 205, 147, 52, 195, 248, 206],
+      "accounts": [
+        {
+          "name": "gameState",
+          "writable": true,
+          "signer": false,
+          "isOptional": false
+        },
+        {
+          "name": "player",
+          "writable": false,
+          "signer": true,
+          "isOptional": false
+        }
+      ],
+      "args": [
+        {
+          "name": "score",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "depositBalance",
+      "discriminator": [230, 131, 27, 174, 204, 81, 23, 194],
+      "accounts": [
+        {
+          "name": "gameState",
+          "writable": true,
+          "signer": false,
+          "isOptional": false
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true,
+          "isOptional": false
+        },
+        {
+          "name": "systemProgram",
+          "writable": false,
+          "signer": false,
+          "isOptional": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "withdrawBalance",
+      "discriminator": [183, 18, 70, 156, 203, 181, 140, 198],
+      "accounts": [
+        {
+          "name": "gameState",
+          "writable": true,
+          "signer": false,
+          "isOptional": false
+        },
+        {
+          "name": "player",
+          "writable": true,
+          "signer": true,
+          "isOptional": false
+        },
+        {
+          "name": "systemProgram",
+          "writable": false,
+          "signer": false,
+          "isOptional": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        }
+      ]
+    },
+    {
+      "name": "resetGame",
+      "discriminator": [166, 168, 0, 63, 251, 80, 186, 152],
+      "accounts": [
+        {
+          "name": "gameState",
+          "writable": true,
+          "signer": false,
+          "isOptional": false
+        },
+        {
+          "name": "player",
+          "writable": false,
+          "signer": true,
+          "isOptional": false
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GameState",
+      "discriminator": [232, 226, 237, 104, 76, 184, 26, 161],
+      "fields": [
+        {
+          "name": "player",
+          "type": {
+            "kind": "struct",
+            "fields": [
+              {
+                "name": "value",
+                "type": {
+                  "kind": "bytes",
+                  "size": 32
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "score",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        },
+        {
+          "name": "balance",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        },
+        {
+          "name": "netProfit",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        },
+        {
+          "name": "totalCoinsCollected",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        },
+        {
+          "name": "createdAt",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        },
+        {
+          "name": "lastUpdated",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 8
+          }
+        },
+        {
+          "name": "bump",
+          "type": {
+            "kind": "scalar",
+            "encoding": "additive",
+            "size": 1
+          }
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "GameInitialized",
+      "discriminator": [154, 111, 27, 46, 210, 252, 135, 126]
+    },
+    {
+      "name": "CoinCollected",
+      "discriminator": [219, 201, 18, 237, 87, 61, 105, 251]
+    },
+    {
+      "name": "ScoreRecorded",
+      "discriminator": [42, 33, 226, 21, 85, 21, 238, 250]
+    },
+    {
+      "name": "BalanceDeposited",
+      "discriminator": [136, 13, 202, 125, 193, 52, 130, 37]
+    },
+    {
+      "name": "BalanceWithdrawn",
+      "discriminator": [232, 7, 249, 183, 57, 177, 207, 33]
+    },
+    {
+      "name": "GameReset",
+      "discriminator": [11, 200, 158, 163, 83, 86, 199, 3]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
+    },
+    {
+      "code": 6001,
+      "name": "InsufficientBalance",
+      "msg": "Insufficient balance"
+    },
+    {
+      "code": 6002,
+      "name": "TooManyRequests",
+      "msg": "Too many requests - rate limited"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    }
+  ]
+}

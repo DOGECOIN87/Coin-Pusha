@@ -1,0 +1,20 @@
+{
+  "source": {
+    "readings": [
+      23.5,
+      24.1,
+      23.8,
+      25.2,
+      24.5,
+      23.9
+    ],
+    "timestamp": "2026-02-15T13:15:59.149993",
+    "location": "Lab A"
+  },
+  "analysis": {
+    "average": 24.166666666666668,
+    "minimum": 23.5,
+    "maximum": 25.2,
+    "count": 6
+  }
+}

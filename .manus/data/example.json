@@ -1,0 +1,12 @@
+{
+  "project": "Manus AI",
+  "version": "1.0",
+  "status": "active",
+  "components": [
+    "messaging",
+    "files",
+    "shell",
+    "browser",
+    "deployment"
+  ]
+}
