@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GameEngine } from './game/GameEngine';
 import { Overlay } from './components/Overlay';
+import { PegboardCanvas } from './components/PegboardCanvas';
 import { GameState } from './types';
 import { WalletProvider } from './context/WalletContext';
 
@@ -60,15 +61,18 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-gray-900">
-      <canvas 
-        ref={canvasRef} 
-        className="w-full h-full block cursor-crosshair"
+    <div className="relative w-full h-screen overflow-hidden bg-black">
+      {/* Lumia Pegboard background */}
+      <PegboardCanvas />
+      {/* Three.js game canvas (transparent background) */}
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full block cursor-crosshair"
         onPointerDown={handlePointerDown}
       />
-      <Overlay 
-        state={gameState} 
-        onReset={() => engineRef.current?.reset()} 
+      <Overlay
+        state={gameState}
+        onReset={() => engineRef.current?.reset()}
         onPauseToggle={() => engineRef.current?.togglePause()}
         onBump={() => engineRef.current?.bump()}
         engineRef={engineRef}

@@ -3,22 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JUNK Pusher</title>
+    <title>JUNK Pusher — Gorbagana</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-      body { 
-        margin: 0; 
-        overflow: hidden; 
-        background-color: #050510; 
-        user-select: none; 
-        font-family: 'Rajdhani', sans-serif;
+      @font-face {
+        font-family: 'Pusia';
+        src: url('/fonts/Pusia Bold.otf') format('opentype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #0a0f0a;
+        user-select: none;
+        font-family: 'Inter', sans-serif;
       }
       canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
-      
+
       /* Utilities for UI effects */
       .text-glow { text-shadow: 0 0 10px currentColor; }
       .box-glow { box-shadow: 0 0 15px currentColor; }
+      .font-heading { font-family: 'Pusia', sans-serif; text-transform: uppercase; letter-spacing: -0.02em; font-weight: 700; color: #00FF00; text-shadow: 0 0 5px #00FF00, 0 0 15px rgba(0,255,0,0.45); }
     </style>
   <script type="importmap">
 {

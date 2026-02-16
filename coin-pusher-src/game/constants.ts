@@ -27,10 +27,10 @@ export const TRASHCOIN = {
 };
 
 export const COLORS = {
-  COIN: 0xe8a317, // JUNK token amber/orange
-  FLOOR: 0x2a2a35, // Significantly lighter floor (dark slate blue)
-  PUSHER: 0x606070, // Much lighter pusher (visible grey)
-  CABINET: 0x333340, // Lighter cabinet walls
-  LIGHT_AMBIENT: 0xffffff, // White ambient
-  LIGHT_MAIN: 0xfff0dd, // Bright warm spotlight
+  COIN: 0x00ff00, // Neon Green — Gorbagana primary
+  FLOOR: 0x1a2a1a, // Dark green-tinted floor
+  PUSHER: 0x4a5a4a, // Grey-green pusher
+  CABINET: 0x1a3a2a, // Deep green cabinet walls
+  LIGHT_AMBIENT: 0xeeffee, // Greenish-white ambient
+  LIGHT_MAIN: 0xddffd0, // Cool green-white spotlight
 };

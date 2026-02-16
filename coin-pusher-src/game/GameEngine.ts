@@ -68,10 +68,8 @@ export class GameEngine {
 
     // 2. Init Three.js
     this.scene = new THREE.Scene();
-    // Lighter background (Deep Indigo/Twilight) so it's not a black void
-    this.scene.background = new THREE.Color(0x151525); 
-    // Reduced fog density so the back of the machine is visible
-    this.scene.fog = new THREE.FogExp2(0x151525, 0.02);
+    // Transparent background — Lumia Pegboard shows through
+    this.scene.background = null;
 
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -79,13 +77,15 @@ export class GameEngine {
     this.camera.position.set(0, 14, 11);
     this.camera.lookAt(0, 0, 0);
 
-    this.renderer = new THREE.WebGLRenderer({ 
-      canvas, 
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
       antialias: true,
+      alpha: true,
       powerPreference: "high-performance",
       stencil: false,
       depth: true
     });
+    this.renderer.setClearColor(0x000000, 0);
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -96,11 +96,11 @@ export class GameEngine {
 
     // 3. Lighting (Brightened)
     
-    // Hemisphere Light (Sky/Ground) - Provides base visibility everywhere
-    const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x222233, 1.5);
+    // Hemisphere Light — green-tinted sky, deep green ground
+    const hemiLight = new THREE.HemisphereLight(0xccffcc, 0x0d3d24, 1.5);
     this.scene.add(hemiLight);
 
-    // Main Spotlight - Stronger intensity
+    // Main Spotlight — cool green-white
     const dirLight = new THREE.SpotLight(COLORS.LIGHT_MAIN, 1000);
     dirLight.position.set(5, 18, 5);
     dirLight.angle = Math.PI / 3;
@@ -113,15 +113,20 @@ export class GameEngine {
     dirLight.shadow.mapSize.height = 2048;
     this.scene.add(dirLight);
 
-    // Fill Light - Softens harsh shadows
-    const fillLight = new THREE.DirectionalLight(0xaaddff, 1.0);
+    // Fill Light — purple tint (Oscar Purple accent)
+    const fillLight = new THREE.DirectionalLight(0x9945FF, 0.6);
     fillLight.position.set(-5, 10, -5);
     this.scene.add(fillLight);
 
-    // Accent Light - Kept for style, but brighter
-    const accentLight = new THREE.PointLight(0xff00ff, 100, 20);
+    // Accent Light — Oscar Magenta brand accent
+    const accentLight = new THREE.PointLight(0xFF00FF, 80, 20);
     accentLight.position.set(0, 3, -2);
     this.scene.add(accentLight);
+
+    // Neon Green point light for brand glow
+    const greenAccent = new THREE.PointLight(0x00FF00, 40, 15);
+    greenAccent.position.set(0, 2, 3);
+    this.scene.add(greenAccent);
 
     // 4. Build Level
     this.buildStaticGeometry();
@@ -138,16 +143,69 @@ export class GameEngine {
     this.startLoop();
   }
 
+  private makeGrungeTexture(size: number, baseColor: string, stainColor: string): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+
+    // Base fill
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, size, size);
+
+    // Random stains and splotches
+    for (let i = 0; i < 60; i++) {
+      ctx.globalAlpha = Math.random() * 0.15 + 0.03;
+      ctx.fillStyle = stainColor;
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const r = Math.random() * size * 0.15 + 4;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r * (0.5 + Math.random()), Math.random() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Scratches
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = '#000000';
+    for (let i = 0; i < 20; i++) {
+      ctx.lineWidth = Math.random() * 2 + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * size, Math.random() * size);
+      ctx.lineTo(Math.random() * size, Math.random() * size);
+      ctx.stroke();
+    }
+
+    // Noise grain
+    ctx.globalAlpha = 1;
+    const imgData = ctx.getImageData(0, 0, size, size);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const noise = (Math.random() - 0.5) * 18;
+      imgData.data[i] += noise;
+      imgData.data[i + 1] += noise;
+      imgData.data[i + 2] += noise;
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    return texture;
+  }
+
   private buildStaticGeometry() {
     const pfWidth = DIMENSIONS.PLAYFIELD_WIDTH;
     const pfLength = DIMENSIONS.PLAYFIELD_LENGTH;
     const pfThickness = 1;
 
-    // Floor Material - Brighter grey, keeps metallic feel
-    const floorMat = new THREE.MeshStandardMaterial({ 
-      color: COLORS.FLOOR, 
-      roughness: 0.5,
-      metalness: 0.6,
+    // Floor Material — stained, grimy metal
+    const floorTex = this.makeGrungeTexture(256, '#1a2a1a', '#0d1a0d');
+    floorTex.repeat.set(2, 2);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: COLORS.FLOOR,
+      map: floorTex,
+      roughness: 0.65,
+      metalness: 0.5,
     });
     
     // Geometry
@@ -166,13 +224,16 @@ export class GameEngine {
         floorBody
     );
 
-    // Walls
+    // Walls — rusted, stained metal
     const wallThickness = 0.5;
     const wallHeight = DIMENSIONS.WALL_HEIGHT;
-    const wallMat = new THREE.MeshStandardMaterial({ 
+    const wallTex = this.makeGrungeTexture(256, '#1a3a2a', '#0a1f12');
+    wallTex.repeat.set(3, 1);
+    const wallMat = new THREE.MeshStandardMaterial({
         color: COLORS.CABINET,
-        roughness: 0.4,
-        metalness: 0.4
+        map: wallTex,
+        roughness: 0.75,
+        metalness: 0.3
     });
 
     const createWall = (x: number, z: number, w: number, l: number) => {
@@ -195,12 +256,6 @@ export class GameEngine {
     createWall(pfWidth/2 + wallThickness/2, 0, wallThickness, pfLength);
     createWall(0, -pfLength/2 - wallThickness/2, pfWidth + wallThickness*2, wallThickness);
     
-    // Add glowing neon strips on walls - Brighter
-    const stripGeo = new THREE.BoxGeometry(pfWidth, 0.05, 0.05);
-    const stripMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-    const strip = new THREE.Mesh(stripGeo, stripMat);
-    strip.position.set(0, wallHeight, -pfLength/2 + 0.1);
-    this.scene.add(strip);
   }
 
   private buildPusher() {
@@ -244,13 +299,13 @@ export class GameEngine {
     const junkTexture = textureLoader.load('/junk.png');
     junkTexture.colorSpace = THREE.SRGBColorSpace;
 
-    // Rim material (side of the coin)
+    // Rim material (side of the coin) — Neon Green brand
     const rimMaterial = new THREE.MeshStandardMaterial({
       color: COLORS.COIN,
       metalness: 0.85,
       roughness: 0.12,
-      emissive: 0x553300,
-      emissiveIntensity: 0.3
+      emissive: 0x003300,
+      emissiveIntensity: 0.4
     });
 
     // Face material with JUNK token image (top & bottom caps)
@@ -258,8 +313,8 @@ export class GameEngine {
       map: junkTexture,
       metalness: 0.3,
       roughness: 0.35,
-      emissive: 0x443300,
-      emissiveIntensity: 0.25
+      emissive: 0x002200,
+      emissiveIntensity: 0.3
     });
 
     // CylinderGeometry material groups: [0]=side, [1]=top cap, [2]=bottom cap
