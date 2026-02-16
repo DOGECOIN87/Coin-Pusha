@@ -1,13 +1,26 @@
 /**
  * Generated Client SDK for Coin Pusher Game Solana Program
- * Auto-generated from IDL
+ * Configured for Gorbagana (Solana fork) deployment
  */
 
-import { PublicKey, TransactionInstruction, SystemProgram, Keypair, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
-import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
-import IDL from '../idl/coin-pusher-game.json';
+import { PublicKey, TransactionInstruction, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 
-export const PROGRAM_ID = new PublicKey('11111111111111111111111111111111');
+// Program ID from environment, falls back to placeholder
+function getProgramId(): PublicKey {
+  const envProgramId = typeof import.meta !== 'undefined'
+    ? import.meta.env?.VITE_SOLANA_PROGRAM_ID
+    : undefined;
+
+  if (!envProgramId || envProgramId === '11111111111111111111111111111111') {
+    console.warn(
+      '[CoinPusherClient] Using placeholder Program ID. Deploy the program and set VITE_SOLANA_PROGRAM_ID in .env.local'
+    );
+  }
+
+  return new PublicKey(envProgramId || '11111111111111111111111111111111');
+}
+
+export const PROGRAM_ID = getProgramId();
 
 export interface InitializeGameParams {
   initialBalance: number;
@@ -31,21 +44,22 @@ export interface WithdrawBalanceParams {
 
 /**
  * Coin Pusher Game Program Client
+ * Provides typed instruction builders and account readers.
  */
 export class CoinPusherClient {
-  private program: Program;
+  private programId: PublicKey;
 
-  constructor(provider: AnchorProvider) {
-    this.program = new Program(IDL as Idl, PROGRAM_ID, provider);
+  constructor(programId?: PublicKey) {
+    this.programId = programId || PROGRAM_ID;
   }
 
   /**
    * Derive the game state PDA for a player
    */
-  static async getGameStatePDA(
+  static getGameStatePDA(
     playerAddress: PublicKey,
     programId: PublicKey = PROGRAM_ID
-  ): Promise<[PublicKey, number]> {
+  ): [PublicKey, number] {
     return PublicKey.findProgramAddressSync(
       [Buffer.from('game_state'), playerAddress.toBuffer()],
       programId
@@ -53,142 +67,155 @@ export class CoinPusherClient {
   }
 
   /**
-   * Initialize game session for a player
+   * Build an Anchor instruction discriminator
+   */
+  private async getDiscriminator(name: string): Promise<Buffer> {
+    const preimage = `global:${name}`;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(preimage);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Buffer.from(new Uint8Array(hashBuffer).slice(0, 8));
+  }
+
+  /**
+   * Build: Initialize game session for a player
    */
   async initializeGame(
-    player: Keypair,
+    player: PublicKey,
     params: InitializeGameParams
   ): Promise<TransactionInstruction> {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(player.publicKey);
+    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(player, this.programId);
 
-    return this.program.instruction.initializeGame(params.initialBalance, {
-      accounts: {
-        gameState: gameStatePDA,
-        player: player.publicKey,
-        systemProgram: SystemProgram.programId,
-        rent: SYSVAR_RENT_PUBKEY,
-      },
+    const discriminator = await this.getDiscriminator('initialize_game');
+    const data = Buffer.alloc(16);
+    discriminator.copy(data, 0);
+    data.writeBigUInt64LE(BigInt(params.initialBalance), 8);
+
+    return new TransactionInstruction({
+      keys: [
+        { pubkey: gameStatePDA, isSigner: false, isWritable: true },
+        { pubkey: player, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: this.programId,
+      data,
     });
   }
 
   /**
-   * Record a coin collection (bump action)
+   * Build: Record a coin collection (bump action)
    */
   async recordCoinCollection(
-    player: Keypair,
+    player: PublicKey,
     params: RecordCoinCollectionParams
   ): Promise<TransactionInstruction> {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(player.publicKey);
+    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(player, this.programId);
 
-    return this.program.instruction.recordCoinCollection(params.amount, {
-      accounts: {
-        gameState: gameStatePDA,
-        player: player.publicKey,
-      },
+    const discriminator = await this.getDiscriminator('record_coin_collection');
+    const data = Buffer.alloc(16);
+    discriminator.copy(data, 0);
+    data.writeBigUInt64LE(BigInt(params.amount), 8);
+
+    return new TransactionInstruction({
+      keys: [
+        { pubkey: gameStatePDA, isSigner: false, isWritable: true },
+        { pubkey: player, isSigner: true, isWritable: false },
+      ],
+      programId: this.programId,
+      data,
     });
   }
 
   /**
-   * Record player score
+   * Build: Record player score
    */
   async recordScore(
-    player: Keypair,
+    player: PublicKey,
     params: RecordScoreParams
   ): Promise<TransactionInstruction> {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(player.publicKey);
+    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(player, this.programId);
 
-    return this.program.instruction.recordScore(params.score, {
-      accounts: {
-        gameState: gameStatePDA,
-        player: player.publicKey,
-      },
+    const discriminator = await this.getDiscriminator('record_score');
+    const data = Buffer.alloc(16);
+    discriminator.copy(data, 0);
+    data.writeBigUInt64LE(BigInt(params.score), 8);
+
+    return new TransactionInstruction({
+      keys: [
+        { pubkey: gameStatePDA, isSigner: false, isWritable: true },
+        { pubkey: player, isSigner: true, isWritable: false },
+      ],
+      programId: this.programId,
+      data,
     });
   }
 
   /**
-   * Deposit SOL into game balance
+   * Build: Deposit SOL/GOR into game balance
    */
   async depositBalance(
-    player: Keypair,
+    player: PublicKey,
     params: DepositBalanceParams
   ): Promise<TransactionInstruction> {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(player.publicKey);
+    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(player, this.programId);
 
-    return this.program.instruction.depositBalance(params.amount, {
-      accounts: {
-        gameState: gameStatePDA,
-        player: player.publicKey,
-        systemProgram: SystemProgram.programId,
-      },
+    const discriminator = await this.getDiscriminator('deposit_balance');
+    const data = Buffer.alloc(16);
+    discriminator.copy(data, 0);
+    data.writeBigUInt64LE(BigInt(params.amount), 8);
+
+    return new TransactionInstruction({
+      keys: [
+        { pubkey: gameStatePDA, isSigner: false, isWritable: true },
+        { pubkey: player, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: this.programId,
+      data,
     });
   }
 
   /**
-   * Withdraw balance from game
+   * Build: Withdraw balance from game
    */
   async withdrawBalance(
-    player: Keypair,
+    player: PublicKey,
     params: WithdrawBalanceParams
   ): Promise<TransactionInstruction> {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(player.publicKey);
+    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(player, this.programId);
 
-    return this.program.instruction.withdrawBalance(params.amount, {
-      accounts: {
-        gameState: gameStatePDA,
-        player: player.publicKey,
-        systemProgram: SystemProgram.programId,
-      },
+    const discriminator = await this.getDiscriminator('withdraw_balance');
+    const data = Buffer.alloc(16);
+    discriminator.copy(data, 0);
+    data.writeBigUInt64LE(BigInt(params.amount), 8);
+
+    return new TransactionInstruction({
+      keys: [
+        { pubkey: gameStatePDA, isSigner: false, isWritable: true },
+        { pubkey: player, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: this.programId,
+      data,
     });
   }
 
   /**
-   * Reset game state
+   * Build: Reset game state
    */
-  async resetGame(player: Keypair): Promise<TransactionInstruction> {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(player.publicKey);
+  async resetGame(player: PublicKey): Promise<TransactionInstruction> {
+    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(player, this.programId);
 
-    return this.program.instruction.resetGame({
-      accounts: {
-        gameState: gameStatePDA,
-        player: player.publicKey,
-      },
+    const discriminator = await this.getDiscriminator('reset_game');
+
+    return new TransactionInstruction({
+      keys: [
+        { pubkey: gameStatePDA, isSigner: false, isWritable: true },
+        { pubkey: player, isSigner: true, isWritable: false },
+      ],
+      programId: this.programId,
+      data: Buffer.from(discriminator),
     });
-  }
-
-  /**
-   * Fetch game state for a player
-   */
-  async getGameState(playerAddress: PublicKey) {
-    const [gameStatePDA] = await CoinPusherClient.getGameStatePDA(playerAddress);
-
-    try {
-      const state = await this.program.account.gameState.fetch(gameStatePDA);
-      return state;
-    } catch (error) {
-      console.error('Failed to fetch game state:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Subscribe to game state changes for a player
-   */
-  onGameStateChange(
-    playerAddress: PublicKey,
-    callback: (state: any) => void
-  ): number {
-    const [gameStatePDA] = CoinPusherClient.getGameStatePDA(playerAddress);
-
-    return this.program.account.gameState.subscribe(gameStatePDA, (state) => {
-      callback(state);
-    });
-  }
-
-  /**
-   * Unsubscribe from game state changes
-   */
-  unsubscribeFromGameState(subscriptionId: number) {
-    this.program.account.gameState.unsubscribe(subscriptionId);
   }
 }
 

@@ -11,14 +11,14 @@ export class GameEngine {
   public static DEBUG_COLLIDERS = 0;
   public static DEBUG_HIDE_CABINET = 0;
   public static DEBUG_POLYGONS = 0;
-  public static DEBUG_CONTROLS = 1;
-  public static DEBUG_FPS = 1;
+  public static DEBUG_CONTROLS = 0;
+  public static DEBUG_FPS = 0;
 
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
   private world!: RAPIER.World;
-  
+
   // Physics Objects
   private pusherBody!: RAPIER.RigidBody;
   private coinProto!: THREE.Mesh;
@@ -28,7 +28,7 @@ export class GameEngine {
   // Rare Trashcoin system
   private trashcoinInstancedMesh!: THREE.InstancedMesh;
   private trashcoinBodies: { body: RAPIER.RigidBody; id: number }[] = [];
-  
+
   // State
   private isInitialized = false;
   private isPaused = false;
@@ -37,9 +37,9 @@ export class GameEngine {
   private accumulatedTime = 0;
   private frameCount = 0;
   private lastFpsTime = 0;
-  
+
   private onGameStateUpdate?: GameEventCallback;
-  
+
   // Game Variables
   private score = 0;
   private balance = 100;
@@ -49,7 +49,7 @@ export class GameEngine {
 
   // Raycasting for input
   private raycaster = new THREE.Raycaster();
-  
+
   constructor(config: Partial<GameConfig>) {
     // Apply config overrides if needed
     if (config.debugEmptyPool) GameEngine.DEBUG_EMPTY_POOL = 1;
@@ -57,7 +57,7 @@ export class GameEngine {
   }
 
   public async initialize(
-    canvas: HTMLCanvasElement, 
+    canvas: HTMLCanvasElement,
     onUpdate: GameEventCallback
   ): Promise<void> {
     this.onGameStateUpdate = onUpdate;
@@ -89,13 +89,13 @@ export class GameEngine {
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    
+
     // Adjusted Tone Mapping for a brighter image
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.3;
 
     // 3. Lighting (Brightened)
-    
+
     // Hemisphere Light — green-tinted sky, deep green ground
     const hemiLight = new THREE.HemisphereLight(0xccffcc, 0x0d3d24, 1.5);
     this.scene.add(hemiLight);
@@ -136,7 +136,7 @@ export class GameEngine {
 
     // 5. Initial Pool
     if (!GameEngine.DEBUG_EMPTY_POOL) {
-        this.spawnInitialCoins();
+      this.spawnInitialCoins();
     }
 
     this.isInitialized = true;
@@ -207,7 +207,7 @@ export class GameEngine {
       roughness: 0.65,
       metalness: 0.5,
     });
-    
+
     // Geometry
     const floorGeo = new THREE.BoxGeometry(pfWidth, pfThickness, pfLength);
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
@@ -219,9 +219,9 @@ export class GameEngine {
     const floorBodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(0, -pfThickness / 2, 0);
     const floorBody = this.world.createRigidBody(floorBodyDesc);
     this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(pfWidth / 2, pfThickness / 2, pfLength / 2)
+      RAPIER.ColliderDesc.cuboid(pfWidth / 2, pfThickness / 2, pfLength / 2)
         .setFriction(PHYSICS.COIN_FRICTION), // Match coin friction for consistent sliding
-        floorBody
+      floorBody
     );
 
     // Walls — rusted, stained metal
@@ -230,32 +230,32 @@ export class GameEngine {
     const wallTex = this.makeGrungeTexture(256, '#1a3a2a', '#0a1f12');
     wallTex.repeat.set(3, 1);
     const wallMat = new THREE.MeshStandardMaterial({
-        color: COLORS.CABINET,
-        map: wallTex,
-        roughness: 0.75,
-        metalness: 0.3
+      color: COLORS.CABINET,
+      map: wallTex,
+      roughness: 0.75,
+      metalness: 0.3
     });
 
     const createWall = (x: number, z: number, w: number, l: number) => {
-        const geo = new THREE.BoxGeometry(w, wallHeight, l);
-        const mesh = new THREE.Mesh(geo, wallMat);
-        mesh.position.set(x, wallHeight/2, z);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        if (!GameEngine.DEBUG_HIDE_CABINET) this.scene.add(mesh);
+      const geo = new THREE.BoxGeometry(w, wallHeight, l);
+      const mesh = new THREE.Mesh(geo, wallMat);
+      mesh.position.set(x, wallHeight / 2, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      if (!GameEngine.DEBUG_HIDE_CABINET) this.scene.add(mesh);
 
-        const bodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(x, wallHeight/2, z);
-        const body = this.world.createRigidBody(bodyDesc);
-        this.world.createCollider(
-            RAPIER.ColliderDesc.cuboid(w/2, wallHeight/2, l/2).setFriction(0.1), // Low friction walls so coins don't climb
-            body
-        );
+      const bodyDesc = RAPIER.RigidBodyDesc.fixed().setTranslation(x, wallHeight / 2, z);
+      const body = this.world.createRigidBody(bodyDesc);
+      this.world.createCollider(
+        RAPIER.ColliderDesc.cuboid(w / 2, wallHeight / 2, l / 2).setFriction(0.1), // Low friction walls so coins don't climb
+        body
+      );
     };
 
-    createWall(-pfWidth/2 - wallThickness/2, 0, wallThickness, pfLength);
-    createWall(pfWidth/2 + wallThickness/2, 0, wallThickness, pfLength);
-    createWall(0, -pfLength/2 - wallThickness/2, pfWidth + wallThickness*2, wallThickness);
-    
+    createWall(-pfWidth / 2 - wallThickness / 2, 0, wallThickness, pfLength);
+    createWall(pfWidth / 2 + wallThickness / 2, 0, wallThickness, pfLength);
+    createWall(0, -pfLength / 2 - wallThickness / 2, pfWidth + wallThickness * 2, wallThickness);
+
   }
 
   private buildPusher() {
@@ -264,22 +264,22 @@ export class GameEngine {
     const height = 1;
 
     const geo = new THREE.BoxGeometry(width, height, length);
-    const mat = new THREE.MeshStandardMaterial({ 
-        color: COLORS.PUSHER, 
-        roughness: 0.5, 
-        metalness: 0.5 
+    const mat = new THREE.MeshStandardMaterial({
+      color: COLORS.PUSHER,
+      roughness: 0.5,
+      metalness: 0.5
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
     this.scene.add(mesh);
 
     const bodyDesc = RAPIER.RigidBodyDesc.kinematicPositionBased()
-        .setTranslation(0, height/2 + 0.05, -DIMENSIONS.PLAYFIELD_LENGTH/2 + 2);
+      .setTranslation(0, height / 2 + 0.05, -DIMENSIONS.PLAYFIELD_LENGTH / 2 + 2);
     this.pusherBody = this.world.createRigidBody(bodyDesc);
     this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(width/2, height/2, length/2)
-        .setFriction(PHYSICS.COIN_FRICTION), 
-        this.pusherBody
+      RAPIER.ColliderDesc.cuboid(width / 2, height / 2, length / 2)
+        .setFriction(PHYSICS.COIN_FRICTION),
+      this.pusherBody
     );
 
     mesh.userData = { rigidBody: this.pusherBody };
@@ -327,7 +327,7 @@ export class GameEngine {
     this.scene.add(this.coinInstancedMesh);
 
     const dummy = new THREE.Object3D();
-    dummy.scale.set(0,0,0);
+    dummy.scale.set(0, 0, 0);
     dummy.updateMatrix();
     for (let i = 0; i < PHYSICS.MAX_COINS; i++) {
       this.coinInstancedMesh.setMatrixAt(i, dummy.matrix);
@@ -383,14 +383,14 @@ export class GameEngine {
   private spawnInitialCoins() {
     const count = 80;
     for (let i = 0; i < count; i++) {
-        const x = (Math.random() - 0.5) * (DIMENSIONS.PLAYFIELD_WIDTH - 1);
-        const z = (Math.random() - 0.5) * (DIMENSIONS.PLAYFIELD_LENGTH - 4);
-        const y = 2 + Math.random() * 5;
-        if (Math.random() < TRASHCOIN.SPAWN_CHANCE && this.trashcoinBodies.length < TRASHCOIN.MAX_COUNT) {
-            this.spawnTrashcoin(x, y, z);
-        } else {
-            this.spawnCoin(x, y, z);
-        }
+      const x = (Math.random() - 0.5) * (DIMENSIONS.PLAYFIELD_WIDTH - 1);
+      const z = (Math.random() - 0.5) * (DIMENSIONS.PLAYFIELD_LENGTH - 4);
+      const y = 2 + Math.random() * 5;
+      if (Math.random() < TRASHCOIN.SPAWN_CHANCE && this.trashcoinBodies.length < TRASHCOIN.MAX_COUNT) {
+        this.spawnTrashcoin(x, y, z);
+      } else {
+        this.spawnCoin(x, y, z);
+      }
     }
   }
 
@@ -403,17 +403,17 @@ export class GameEngine {
     const randRotZ = (Math.random() - 0.5) * 0.5;
 
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-        .setTranslation(x, y, z)
-        .setRotation({ x: randRotX, y: 0, z: randRotZ, w: 1.0 }) // Initial slight tilt
-        .setLinearDamping(PHYSICS.COIN_LINEAR_DAMPING)
-        .setAngularDamping(PHYSICS.COIN_ANGULAR_DAMPING)
-        .setCcdEnabled(true); // Critical for thin coins
-    
+      .setTranslation(x, y, z)
+      .setRotation({ x: randRotX, y: 0, z: randRotZ, w: 1.0 }) // Initial slight tilt
+      .setLinearDamping(PHYSICS.COIN_LINEAR_DAMPING)
+      .setAngularDamping(PHYSICS.COIN_ANGULAR_DAMPING)
+      .setCcdEnabled(true); // Critical for thin coins
+
     const body = this.world.createRigidBody(bodyDesc);
-    const collider = RAPIER.ColliderDesc.cylinder(PHYSICS.COIN_HEIGHT/2, PHYSICS.COIN_RADIUS)
-        .setFriction(PHYSICS.COIN_FRICTION)
-        .setRestitution(PHYSICS.COIN_RESTITUTION)
-        .setDensity(PHYSICS.COIN_DENSITY); // Heavy coins
+    const collider = RAPIER.ColliderDesc.cylinder(PHYSICS.COIN_HEIGHT / 2, PHYSICS.COIN_RADIUS)
+      .setFriction(PHYSICS.COIN_FRICTION)
+      .setRestitution(PHYSICS.COIN_RESTITUTION)
+      .setDensity(PHYSICS.COIN_DENSITY); // Heavy coins
     this.world.createCollider(collider, body);
 
     this.coinBodies.push({ body, id: body.handle });
@@ -426,20 +426,20 @@ export class GameEngine {
     const randRotZ = (Math.random() - 0.5) * 0.5;
 
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-        .setTranslation(x, y, z)
-        .setRotation({ x: randRotX, y: 0, z: randRotZ, w: 1.0 })
-        .setLinearDamping(PHYSICS.COIN_LINEAR_DAMPING)
-        .setAngularDamping(PHYSICS.COIN_ANGULAR_DAMPING)
-        .setCcdEnabled(true);
+      .setTranslation(x, y, z)
+      .setRotation({ x: randRotX, y: 0, z: randRotZ, w: 1.0 })
+      .setLinearDamping(PHYSICS.COIN_LINEAR_DAMPING)
+      .setAngularDamping(PHYSICS.COIN_ANGULAR_DAMPING)
+      .setCcdEnabled(true);
 
     const body = this.world.createRigidBody(bodyDesc);
     const collider = RAPIER.ColliderDesc.cylinder(
-        PHYSICS.COIN_HEIGHT * 1.2 / 2,
-        PHYSICS.COIN_RADIUS * 1.05
+      PHYSICS.COIN_HEIGHT * 1.2 / 2,
+      PHYSICS.COIN_RADIUS * 1.05
     )
-        .setFriction(PHYSICS.COIN_FRICTION)
-        .setRestitution(PHYSICS.COIN_RESTITUTION)
-        .setDensity(PHYSICS.COIN_DENSITY);
+      .setFriction(PHYSICS.COIN_FRICTION)
+      .setRestitution(PHYSICS.COIN_RESTITUTION)
+      .setDensity(PHYSICS.COIN_DENSITY);
     this.world.createCollider(collider, body);
 
     this.trashcoinBodies.push({ body, id: body.handle });
@@ -449,29 +449,29 @@ export class GameEngine {
     if (this.balance <= 0 && !GameEngine.DEBUG_AUTOPLAY) return;
 
     if (!GameEngine.DEBUG_AUTOPLAY) {
-        this.balance--;
-        this.netProfit--;
+      this.balance--;
+      this.netProfit--;
     }
     this.updateGameState();
 
-    const z = -DIMENSIONS.PLAYFIELD_LENGTH/2 + 1;
+    const z = -DIMENSIONS.PLAYFIELD_LENGTH / 2 + 1;
     if (Math.random() < TRASHCOIN.SPAWN_CHANCE && this.trashcoinBodies.length < TRASHCOIN.MAX_COUNT) {
-        this.spawnTrashcoin(normalizedX, 4, z);
+      this.spawnTrashcoin(normalizedX, 4, z);
     } else {
-        this.spawnCoin(normalizedX, 4, z);
+      this.spawnCoin(normalizedX, 4, z);
     }
   }
 
   public dropCoinAtRaycast(ndcX: number, ndcY: number) {
-     this.raycaster.setFromCamera({ x: ndcX, y: ndcY }, this.camera);
-     const dropPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -3); 
-     const target = new THREE.Vector3();
-     this.raycaster.ray.intersectPlane(dropPlane, target);
+    this.raycaster.setFromCamera({ x: ndcX, y: ndcY }, this.camera);
+    const dropPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -3);
+    const target = new THREE.Vector3();
+    this.raycaster.ray.intersectPlane(dropPlane, target);
 
-     const limit = DIMENSIONS.PLAYFIELD_WIDTH/2 - 0.5;
-     const x = Math.max(-limit, Math.min(limit, target.x));
-     
-     this.dropUserCoin(x);
+    const limit = DIMENSIONS.PLAYFIELD_WIDTH / 2 - 0.5;
+    const x = Math.max(-limit, Math.min(limit, target.x));
+
+    this.dropUserCoin(x);
   }
 
   public bump() {
@@ -482,22 +482,22 @@ export class GameEngine {
 
     // Bump physics parameters
     // We want a strong vertical pop with some chaotic lateral movement
-    const verticalImpulseBase = 1.0; 
+    const verticalImpulseBase = 1.0;
     const lateralImpulseBase = 0.5;
 
     const applyBumpTo = (bodies: { body: RAPIER.RigidBody; id: number }[]) => {
-        bodies.forEach(({ body }) => {
-            body.wakeUp();
-            const ix = (Math.random() - 0.5) * lateralImpulseBase;
-            const iy = verticalImpulseBase + Math.random() * 1.5;
-            const iz = (Math.random() - 0.5) * lateralImpulseBase;
-            body.applyImpulse({ x: ix, y: iy, z: iz }, true);
-            body.applyTorqueImpulse({
-                x: (Math.random() - 0.5) * 0.1,
-                y: (Math.random() - 0.5) * 0.1,
-                z: (Math.random() - 0.5) * 0.1
-            }, true);
-        });
+      bodies.forEach(({ body }) => {
+        body.wakeUp();
+        const ix = (Math.random() - 0.5) * lateralImpulseBase;
+        const iy = verticalImpulseBase + Math.random() * 1.5;
+        const iz = (Math.random() - 0.5) * lateralImpulseBase;
+        body.applyImpulse({ x: ix, y: iy, z: iz }, true);
+        body.applyTorqueImpulse({
+          x: (Math.random() - 0.5) * 0.1,
+          y: (Math.random() - 0.5) * 0.1,
+          z: (Math.random() - 0.5) * 0.1
+        }, true);
+      });
     };
     applyBumpTo(this.coinBodies);
     applyBumpTo(this.trashcoinBodies);
@@ -505,44 +505,44 @@ export class GameEngine {
 
   private updateGameState() {
     if (this.onGameStateUpdate) {
-        this.onGameStateUpdate({
-            score: this.score,
-            balance: this.balance,
-            netProfit: this.netProfit,
-            isPaused: this.isPaused
-        });
+      this.onGameStateUpdate({
+        score: this.score,
+        balance: this.balance,
+        netProfit: this.netProfit,
+        isPaused: this.isPaused
+      });
     }
   }
 
   public togglePause() {
-      this.isPaused = !this.isPaused;
-      this.updateGameState();
+    this.isPaused = !this.isPaused;
+    this.updateGameState();
   }
 
   public reset() {
-      this.score = 0;
-      this.balance = 100;
-      this.netProfit = 0;
-      this.coinBodies.forEach(c => this.world.removeRigidBody(c.body));
-      this.coinBodies = [];
-      this.trashcoinBodies.forEach(c => this.world.removeRigidBody(c.body));
-      this.trashcoinBodies = [];
+    this.score = 0;
+    this.balance = 100;
+    this.netProfit = 0;
+    this.coinBodies.forEach(c => this.world.removeRigidBody(c.body));
+    this.coinBodies = [];
+    this.trashcoinBodies.forEach(c => this.world.removeRigidBody(c.body));
+    this.trashcoinBodies = [];
 
-      const dummy = new THREE.Object3D();
-      dummy.scale.set(0,0,0);
-      dummy.updateMatrix();
-      for (let i = 0; i < PHYSICS.MAX_COINS; i++) {
-        this.coinInstancedMesh.setMatrixAt(i, dummy.matrix);
-      }
-      this.coinInstancedMesh.instanceMatrix.needsUpdate = true;
+    const dummy = new THREE.Object3D();
+    dummy.scale.set(0, 0, 0);
+    dummy.updateMatrix();
+    for (let i = 0; i < PHYSICS.MAX_COINS; i++) {
+      this.coinInstancedMesh.setMatrixAt(i, dummy.matrix);
+    }
+    this.coinInstancedMesh.instanceMatrix.needsUpdate = true;
 
-      for (let i = 0; i < TRASHCOIN.MAX_COUNT; i++) {
-        this.trashcoinInstancedMesh.setMatrixAt(i, dummy.matrix);
-      }
-      this.trashcoinInstancedMesh.instanceMatrix.needsUpdate = true;
+    for (let i = 0; i < TRASHCOIN.MAX_COUNT; i++) {
+      this.trashcoinInstancedMesh.setMatrixAt(i, dummy.matrix);
+    }
+    this.trashcoinInstancedMesh.instanceMatrix.needsUpdate = true;
 
-      this.spawnInitialCoins();
-      this.updateGameState();
+    this.spawnInitialCoins();
+    this.updateGameState();
   }
 
   private startLoop() {
@@ -560,21 +560,21 @@ export class GameEngine {
 
     this.frameCount++;
     if (now - this.lastFpsTime >= 1000) {
-        if (this.onGameStateUpdate) {
-            this.onGameStateUpdate({ fps: this.frameCount });
-        }
-        this.frameCount = 0;
-        this.lastFpsTime = now;
+      if (this.onGameStateUpdate) {
+        this.onGameStateUpdate({ fps: this.frameCount });
+      }
+      this.frameCount = 0;
+      this.lastFpsTime = now;
     }
 
     this.accumulatedTime += dt;
-    const maxSubSteps = 5; 
+    const maxSubSteps = 5;
     let steps = 0;
     while (this.accumulatedTime >= PHYSICS.TIMESTEP && steps < maxSubSteps) {
-        this.updatePhysicsLogic(now / 1000);
-        this.world.step();
-        this.accumulatedTime -= PHYSICS.TIMESTEP;
-        steps++;
+      this.updatePhysicsLogic(now / 1000);
+      this.world.step();
+      this.accumulatedTime -= PHYSICS.TIMESTEP;
+      steps++;
     }
 
     this.syncGraphics();
@@ -582,120 +582,120 @@ export class GameEngine {
   }
 
   private updatePhysicsLogic(time: number) {
-      // Use time to drive sine wave. 
-      // Note: time here is wall clock. For pure determinism we'd use accumulated simulation time.
-      const pusherZ = -DIMENSIONS.PLAYFIELD_LENGTH/2 + 2 + 
-          Math.sin(time * (Math.PI * 2 / PHYSICS.PUSHER_PERIOD)) * PHYSICS.PUSHER_AMPLITUDE;
-      
-      this.pusherBody.setNextKinematicTranslation({ x: 0, y: 0.55, z: pusherZ });
+    // Use time to drive sine wave. 
+    // Note: time here is wall clock. For pure determinism we'd use accumulated simulation time.
+    const pusherZ = -DIMENSIONS.PLAYFIELD_LENGTH / 2 + 2 +
+      Math.sin(time * (Math.PI * 2 / PHYSICS.PUSHER_PERIOD)) * PHYSICS.PUSHER_AMPLITUDE;
 
-      for (let i = this.coinBodies.length - 1; i >= 0; i--) {
-          const body = this.coinBodies[i].body;
-          const pos = body.translation();
+    this.pusherBody.setNextKinematicTranslation({ x: 0, y: 0.55, z: pusherZ });
 
-          if (pos.y < -2) {
-             const isWin = pos.z > DIMENSIONS.PLAYFIELD_LENGTH/2;
-             if (isWin) this.handleWin(false);
-             this.world.removeRigidBody(body);
-             this.coinBodies.splice(i, 1);
-          }
+    for (let i = this.coinBodies.length - 1; i >= 0; i--) {
+      const body = this.coinBodies[i].body;
+      const pos = body.translation();
+
+      if (pos.y < -2) {
+        const isWin = pos.z > DIMENSIONS.PLAYFIELD_LENGTH / 2;
+        if (isWin) this.handleWin(false);
+        this.world.removeRigidBody(body);
+        this.coinBodies.splice(i, 1);
       }
+    }
 
-      // Trashcoin fall-off detection
-      for (let i = this.trashcoinBodies.length - 1; i >= 0; i--) {
-          const body = this.trashcoinBodies[i].body;
-          const pos = body.translation();
+    // Trashcoin fall-off detection
+    for (let i = this.trashcoinBodies.length - 1; i >= 0; i--) {
+      const body = this.trashcoinBodies[i].body;
+      const pos = body.translation();
 
-          if (pos.y < -2) {
-             const isWin = pos.z > DIMENSIONS.PLAYFIELD_LENGTH/2;
-             if (isWin) this.handleWin(true);
-             this.world.removeRigidBody(body);
-             this.trashcoinBodies.splice(i, 1);
-          }
+      if (pos.y < -2) {
+        const isWin = pos.z > DIMENSIONS.PLAYFIELD_LENGTH / 2;
+        if (isWin) this.handleWin(true);
+        this.world.removeRigidBody(body);
+        this.trashcoinBodies.splice(i, 1);
       }
+    }
 
-      if (GameEngine.DEBUG_AUTOPLAY && Math.random() < 0.05) {
-          this.dropUserCoin((Math.random() - 0.5) * 6);
-      }
+    if (GameEngine.DEBUG_AUTOPLAY && Math.random() < 0.05) {
+      this.dropUserCoin((Math.random() - 0.5) * 6);
+    }
   }
 
   private handleWin(isTrashcoin = false) {
-      const value = isTrashcoin ? TRASHCOIN.SCORE_VALUE : 1;
-      this.score += value;
-      this.balance += value;
-      this.netProfit += value;
-      
-      const now = performance.now();
-      if (now - this.lastCollectionTime > 5000) {
-          this.coinsCollectedRecently = 0;
-      }
-      this.coinsCollectedRecently++;
-      this.lastCollectionTime = now;
-      
-      if (this.coinsCollectedRecently >= 10) {
-          this.balance += 5;
-          this.netProfit += 5;
-          this.coinsCollectedRecently = 0;
-      }
-      this.updateGameState();
+    const value = isTrashcoin ? TRASHCOIN.SCORE_VALUE : 1;
+    this.score += value;
+    this.balance += value;
+    this.netProfit += value;
+
+    const now = performance.now();
+    if (now - this.lastCollectionTime > 5000) {
+      this.coinsCollectedRecently = 0;
+    }
+    this.coinsCollectedRecently++;
+    this.lastCollectionTime = now;
+
+    if (this.coinsCollectedRecently >= 10) {
+      this.balance += 5;
+      this.netProfit += 5;
+      this.coinsCollectedRecently = 0;
+    }
+    this.updateGameState();
   }
 
   private syncGraphics() {
-      const dummy = new THREE.Object3D();
-      
-      const pusherPos = this.pusherBody.translation();
-      const pusherMesh = (this.pusherBody as any).mesh;
-      if (pusherMesh) {
-          pusherMesh.position.set(pusherPos.x, pusherPos.y, pusherPos.z);
-      }
+    const dummy = new THREE.Object3D();
 
-      for (let i = 0; i < PHYSICS.MAX_COINS; i++) {
-          if (i < this.coinBodies.length) {
-              const body = this.coinBodies[i].body;
-              const pos = body.translation();
-              const rot = body.rotation();
-              dummy.position.set(pos.x, pos.y, pos.z);
-              dummy.quaternion.set(rot.x, rot.y, rot.z, rot.w);
-              dummy.scale.set(1, 1, 1);
-          } else {
-              dummy.scale.set(0, 0, 0);
-          }
-          dummy.updateMatrix();
-          this.coinInstancedMesh.setMatrixAt(i, dummy.matrix);
-      }
-      this.coinInstancedMesh.instanceMatrix.needsUpdate = true;
+    const pusherPos = this.pusherBody.translation();
+    const pusherMesh = (this.pusherBody as any).mesh;
+    if (pusherMesh) {
+      pusherMesh.position.set(pusherPos.x, pusherPos.y, pusherPos.z);
+    }
 
-      // Sync trashcoin graphics
-      for (let i = 0; i < TRASHCOIN.MAX_COUNT; i++) {
-          if (i < this.trashcoinBodies.length) {
-              const body = this.trashcoinBodies[i].body;
-              const pos = body.translation();
-              const rot = body.rotation();
-              dummy.position.set(pos.x, pos.y, pos.z);
-              dummy.quaternion.set(rot.x, rot.y, rot.z, rot.w);
-              dummy.scale.set(1, 1, 1);
-          } else {
-              dummy.scale.set(0, 0, 0);
-          }
-          dummy.updateMatrix();
-          this.trashcoinInstancedMesh.setMatrixAt(i, dummy.matrix);
+    for (let i = 0; i < PHYSICS.MAX_COINS; i++) {
+      if (i < this.coinBodies.length) {
+        const body = this.coinBodies[i].body;
+        const pos = body.translation();
+        const rot = body.rotation();
+        dummy.position.set(pos.x, pos.y, pos.z);
+        dummy.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+        dummy.scale.set(1, 1, 1);
+      } else {
+        dummy.scale.set(0, 0, 0);
       }
-      this.trashcoinInstancedMesh.instanceMatrix.needsUpdate = true;
+      dummy.updateMatrix();
+      this.coinInstancedMesh.setMatrixAt(i, dummy.matrix);
+    }
+    this.coinInstancedMesh.instanceMatrix.needsUpdate = true;
+
+    // Sync trashcoin graphics
+    for (let i = 0; i < TRASHCOIN.MAX_COUNT; i++) {
+      if (i < this.trashcoinBodies.length) {
+        const body = this.trashcoinBodies[i].body;
+        const pos = body.translation();
+        const rot = body.rotation();
+        dummy.position.set(pos.x, pos.y, pos.z);
+        dummy.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+        dummy.scale.set(1, 1, 1);
+      } else {
+        dummy.scale.set(0, 0, 0);
+      }
+      dummy.updateMatrix();
+      this.trashcoinInstancedMesh.setMatrixAt(i, dummy.matrix);
+    }
+    this.trashcoinInstancedMesh.instanceMatrix.needsUpdate = true;
   }
 
   public resize(width: number, height: number) {
-      if (this.camera && this.renderer) {
-          this.camera.aspect = width / height;
-          this.camera.updateProjectionMatrix();
-          this.renderer.setSize(width, height);
-      }
+    if (this.camera && this.renderer) {
+      this.camera.aspect = width / height;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(width, height);
+    }
   }
 
   public cleanup() {
-      if (this.requestAnimationId) {
-          cancelAnimationFrame(this.requestAnimationId);
-      }
-      this.renderer?.dispose();
-      this.world?.free();
+    if (this.requestAnimationId) {
+      cancelAnimationFrame(this.requestAnimationId);
+    }
+    this.renderer?.dispose();
+    this.world?.free();
   }
 }

@@ -1,8 +1,8 @@
-import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 /**
  * Solana service for managing wallet connections, RPC calls, and transactions.
- * Configured for Gorbagana testnet (SOL_DEVNET_ADDR environment).
+ * Configured for Gorbagana (Solana fork) network.
  */
 
 export interface SolanaConfig {
@@ -14,7 +14,7 @@ export interface SolanaConfig {
 export interface WalletState {
   publicKey: PublicKey | null;
   isConnected: boolean;
-  signer: any | null;
+  provider: any | null;
 }
 
 export interface TransactionResult {
@@ -23,13 +23,12 @@ export interface TransactionResult {
   error?: string;
 }
 
-
 let connection: Connection | null = null;
 let config: SolanaConfig | null = null;
 let walletState: WalletState = {
   publicKey: null,
   isConnected: false,
-  signer: null,
+  provider: null,
 };
 
 /**
@@ -38,30 +37,62 @@ let walletState: WalletState = {
 export function initializeSolana(cfg: SolanaConfig): void {
   config = cfg;
   connection = new Connection(cfg.rpcUrl, 'confirmed');
+  console.log(`[SolanaService] Initialized — RPC: ${cfg.rpcUrl}, Cluster: ${cfg.cluster}`);
 }
 
 /**
- * Connect wallet to dApp
+ * Get the active Connection instance
  */
-export async function connectWallet(signer: any): Promise<WalletState> {
-  try {
-    if (!signer) {
-      throw new Error('No signer provided');
-    }
+export function getConnection(): Connection {
+  if (!connection) throw new Error('Solana service not initialized. Call initializeSolana() first.');
+  return connection;
+}
 
-    const publicKey = typeof signer.publicKey === 'string' 
-      ? new PublicKey(signer.publicKey)
-      : signer.publicKey;
-    
+/**
+ * Detect a Solana-compatible wallet provider (Phantom, Solflare, etc.)
+ */
+export function detectWalletProvider(): any | null {
+  if (typeof window === 'undefined') return null;
+
+  // Phantom
+  if ((window as any).phantom?.solana?.isPhantom) {
+    return (window as any).phantom.solana;
+  }
+  // Solflare
+  if ((window as any).solflare?.isSolflare) {
+    return (window as any).solflare;
+  }
+  // Generic Solana provider (backpack, etc.)
+  if ((window as any).solana?.isPhantom || (window as any).solana) {
+    return (window as any).solana;
+  }
+  return null;
+}
+
+/**
+ * Connect wallet to dApp via browser wallet extension
+ */
+export async function connectWallet(): Promise<WalletState> {
+  const provider = detectWalletProvider();
+  if (!provider) {
+    throw new Error('No Solana wallet found. Please install Phantom or another Solana-compatible wallet.');
+  }
+
+  try {
+    // Request connection — Phantom will show approval popup
+    const response = await provider.connect();
+    const publicKey = new PublicKey(response.publicKey.toString());
+
     walletState = {
       publicKey,
       isConnected: true,
-      signer,
+      provider,
     };
 
+    console.log(`[SolanaService] Wallet connected: ${publicKey.toBase58()}`);
     return walletState;
   } catch (error) {
-    console.error('Failed to connect wallet:', error);
+    console.error('[SolanaService] Failed to connect wallet:', error);
     throw error;
   }
 }
@@ -69,12 +100,20 @@ export async function connectWallet(signer: any): Promise<WalletState> {
 /**
  * Disconnect wallet
  */
-export function disconnectWallet(): void {
+export async function disconnectWallet(): Promise<void> {
+  try {
+    if (walletState.provider?.disconnect) {
+      await walletState.provider.disconnect();
+    }
+  } catch (e) {
+    // Ignore disconnect errors
+  }
   walletState = {
     publicKey: null,
     isConnected: false,
-    signer: null,
+    provider: null,
   };
+  console.log('[SolanaService] Wallet disconnected');
 }
 
 /**
@@ -85,66 +124,66 @@ export function getWalletState(): WalletState {
 }
 
 /**
- * Get balance of connected wallet
+ * Get SOL/GOR balance of an address (in lamports)
  */
-export async function getBalance(address?: Address): Promise<number> {
-  if (!solanaRpc) throw new Error('Solana service not initialized');
-  
+export async function getBalance(address?: PublicKey): Promise<number> {
+  if (!connection) throw new Error('Solana service not initialized');
+
   const target = address || walletState.publicKey;
   if (!target) throw new Error('No address provided and wallet not connected');
 
   try {
-    const balance = await solanaRpc.getBalance(target).send();
-    return balance.value;
+    const balanceLamports = await connection.getBalance(target);
+    return balanceLamports;
   } catch (error) {
-    console.error('Failed to get balance:', error);
+    console.error('[SolanaService] Failed to get balance:', error);
     throw error;
   }
 }
 
 /**
- * Sign a transaction with connected wallet
+ * Sign and send a transaction using the connected wallet
  */
-export async function signTransaction(transactionBytes: Uint8Array): Promise<Uint8Array> {
-  if (!walletState.signer) {
+export async function sendTransaction(transaction: Transaction): Promise<TransactionResult> {
+  if (!connection) throw new Error('Solana service not initialized');
+  if (!walletState.provider || !walletState.publicKey) {
     throw new Error('Wallet not connected');
   }
 
   try {
-    // Wallet adapter will handle signing
-    const signature = await walletState.signer.sign(transactionBytes);
-    return signature;
-  } catch (error) {
-    console.error('Failed to sign transaction:', error);
-    throw error;
-  }
-}
+    // Get recent blockhash
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = walletState.publicKey;
 
-/**
- * Send and confirm a signed transaction
- */
-export async function sendTransaction(transactionBytes: Uint8Array): Promise<TransactionResult> {
-  if (!solanaRpc) throw new Error('Solana service not initialized');
+    // Sign via wallet extension (Phantom handles the UI popup)
+    const signed = await walletState.provider.signTransaction(transaction);
 
-  try {
-    // Sign transaction with wallet
-    const signature = await signTransaction(transactionBytes);
-
-    // Send transaction to the network
-    const result = await solanaRpc.sendTransaction(transactionBytes).send();
+    // Send the signed transaction
+    const signature = await connection.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    });
 
     // Wait for confirmation
-    const confirmed = await solanaRpc
-      .getSignatureStatuses([result])
-      .send();
+    const confirmation = await connection.confirmTransaction(
+      { signature, blockhash, lastValidBlockHeight },
+      'confirmed'
+    );
 
-    return {
-      signature: result,
-      confirmed: confirmed.value[0]?.confirmationStatus === 'confirmed' || confirmed.value[0]?.confirmationStatus === 'finalized',
-    };
+    if (confirmation.value.err) {
+      return {
+        signature,
+        confirmed: false,
+        error: `Transaction failed: ${JSON.stringify(confirmation.value.err)}`,
+      };
+    }
+
+    console.log(`[SolanaService] Transaction confirmed: ${signature}`);
+    return { signature, confirmed: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Failed to send transaction:', error);
+    console.error('[SolanaService] Failed to send transaction:', error);
     return {
       signature: '',
       confirmed: false,
@@ -157,10 +196,16 @@ export async function sendTransaction(transactionBytes: Uint8Array): Promise<Tra
  * Get program configuration
  */
 export function getProgramConfig(): SolanaConfig {
-  if (!config) {
-    throw new Error('Solana service not initialized');
-  }
+  if (!config) throw new Error('Solana service not initialized');
   return { ...config };
+}
+
+/**
+ * Get the program PublicKey
+ */
+export function getProgramId(): PublicKey {
+  if (!config) throw new Error('Solana service not initialized');
+  return new PublicKey(config.programId);
 }
 
 /**
@@ -172,12 +217,14 @@ export function isWalletConnected(): boolean {
 
 export default {
   initializeSolana,
+  getConnection,
+  detectWalletProvider,
   connectWallet,
   disconnectWallet,
   getWalletState,
   getBalance,
-  signTransaction,
   sendTransaction,
   getProgramConfig,
+  getProgramId,
   isWalletConnected,
 };

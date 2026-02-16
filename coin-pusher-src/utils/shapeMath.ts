@@ -1,6 +1,21 @@
 export type ShapeType = string;
 
-export const SHAPE_TYPES: ShapeType[] = ['trash'];
+// List of all available images to use as floating shapes
+export const IMAGE_PATHS = [
+  '/1000609168.jpg',
+  '/chatgpt-image.png',
+  '/gorby-transparent.png',
+  '/logo-incinerator.jpg',
+  '/edutedbymattr8ck.png',
+  '/oscarthegrouch.webp',
+  '/sticker.webp',
+  '/sticker3.webp',
+  '/stickerpill.webp',
+  '/junk.png',
+  '/trashcoin.png',
+];
+
+export const SHAPE_TYPES: ShapeType[] = IMAGE_PATHS;
 
 export interface Shape {
   id: number;
@@ -13,99 +28,93 @@ export interface Shape {
   rotation: number;
   rotationSpeed: number;
   color: string;
+  imagePath: string;
 }
 
-const BITMAP_SIZE = 256; // Higher res for finer detail
+const BITMAP_SIZE = 256;
 const bitmapCache: Record<string, Uint8Array> = {};
+const imageCache: Record<string, HTMLImageElement> = {};
 let isCacheInitialized = false;
+let loadingPromise: Promise<void> | null = null;
 
 /**
- * Draws a trashcan silhouette onto a canvas context.
+ * Load an image and create a bitmap mask from it
  */
-function drawTrashcan(ctx: CanvasRenderingContext2D, s: number) {
-  const cx = s / 2;
+async function loadImageMask(imagePath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
 
-  // Proportions relative to bitmap size
-  const bodyTop = s * 0.30;
-  const bodyBottom = s * 0.88;
-  const bodyWidthTop = s * 0.36;
-  const bodyWidthBottom = s * 0.30;
-  const lidY = s * 0.22;
-  const lidHeight = s * 0.08;
-  const lidWidth = s * 0.42;
-  const handleWidth = s * 0.12;
-  const handleHeight = s * 0.08;
-  const handleTop = lidY - handleHeight;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = BITMAP_SIZE;
+      canvas.height = BITMAP_SIZE;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-  ctx.fillStyle = '#FFFFFF';
+      if (!ctx) {
+        console.error(`Could not create context for ${imagePath}`);
+        reject(new Error('Context creation failed'));
+        return;
+      }
 
-  // Handle (small rectangle on top of lid)
-  ctx.fillRect(cx - handleWidth / 2, handleTop, handleWidth, handleHeight);
+      // Clear
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, BITMAP_SIZE, BITMAP_SIZE);
 
-  // Lid (wider rectangle)
-  ctx.fillRect(cx - lidWidth / 2, lidY, lidWidth, lidHeight);
+      // Draw image scaled to fit
+      ctx.drawImage(img, 0, 0, BITMAP_SIZE, BITMAP_SIZE);
 
-  // Body (trapezoid — wider at top, narrower at bottom)
-  ctx.beginPath();
-  ctx.moveTo(cx - bodyWidthTop, bodyTop);
-  ctx.lineTo(cx + bodyWidthTop, bodyTop);
-  ctx.lineTo(cx + bodyWidthBottom, bodyBottom);
-  ctx.lineTo(cx - bodyWidthBottom, bodyBottom);
-  ctx.closePath();
-  ctx.fill();
+      // Extract pixel mask (checking alpha channel for transparency)
+      const imgData = ctx.getImageData(0, 0, BITMAP_SIZE, BITMAP_SIZE);
+      const pixels = imgData.data;
+      const mask = new Uint8Array(BITMAP_SIZE * BITMAP_SIZE);
 
-  // Cut vertical lines into the body for detail (draw them as black)
-  ctx.fillStyle = '#000000';
-  const lineCount = 3;
-  const lineWidth = s * 0.018;
-  const lineInset = s * 0.06;
-  const lineTop = bodyTop + lineInset;
-  const lineBottom = bodyBottom - lineInset;
+      for (let i = 0; i < pixels.length; i += 4) {
+        // Use alpha channel for transparency detection
+        const alpha = pixels[i + 3];
+        mask[i / 4] = alpha > 100 ? 1 : 0;
+      }
 
-  for (let i = 0; i < lineCount; i++) {
-    const t = (i + 1) / (lineCount + 1);
-    const xTop = cx - bodyWidthTop + t * bodyWidthTop * 2;
-    const xBot = cx - bodyWidthBottom + t * bodyWidthBottom * 2;
-    ctx.beginPath();
-    ctx.moveTo(xTop - lineWidth / 2, lineTop);
-    ctx.lineTo(xTop + lineWidth / 2, lineTop);
-    ctx.lineTo(xBot + lineWidth / 2, lineBottom);
-    ctx.lineTo(xBot - lineWidth / 2, lineBottom);
-    ctx.closePath();
-    ctx.fill();
-  }
+      bitmapCache[imagePath] = mask;
+      imageCache[imagePath] = img;
+      resolve();
+    };
+
+    img.onerror = () => {
+      console.error(`Failed to load image: ${imagePath}`);
+      // Create a simple rectangular mask as fallback
+      const mask = new Uint8Array(BITMAP_SIZE * BITMAP_SIZE);
+      const margin = BITMAP_SIZE * 0.1;
+      for (let y = 0; y < BITMAP_SIZE; y++) {
+        for (let x = 0; x < BITMAP_SIZE; x++) {
+          if (x > margin && x < BITMAP_SIZE - margin && y > margin && y < BITMAP_SIZE - margin) {
+            mask[y * BITMAP_SIZE + x] = 1;
+          }
+        }
+      }
+      bitmapCache[imagePath] = mask;
+      resolve();
+    };
+
+    img.src = imagePath;
+  });
 }
 
-export function initializeShapeCache() {
+export async function initializeShapeCache(): Promise<void> {
   if (isCacheInitialized) return;
+  if (loadingPromise) return loadingPromise;
 
-  const canvas = document.createElement('canvas');
-  canvas.width = BITMAP_SIZE;
-  canvas.height = BITMAP_SIZE;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  loadingPromise = (async () => {
+    try {
+      await Promise.all(IMAGE_PATHS.map(path => loadImageMask(path)));
+      isCacheInitialized = true;
+      console.log('All image masks loaded successfully');
+    } catch (error) {
+      console.error('Error loading image masks:', error);
+    }
+  })();
 
-  if (!ctx) {
-    console.error("Could not create context for shape generation");
-    return;
-  }
-
-  // Clear
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, BITMAP_SIZE, BITMAP_SIZE);
-
-  // Draw trashcan
-  drawTrashcan(ctx, BITMAP_SIZE);
-
-  // Extract pixel mask
-  const imgData = ctx.getImageData(0, 0, BITMAP_SIZE, BITMAP_SIZE);
-  const pixels = imgData.data;
-  const mask = new Uint8Array(BITMAP_SIZE * BITMAP_SIZE);
-  for (let i = 0; i < pixels.length; i += 4) {
-    mask[i / 4] = pixels[i] > 100 ? 1 : 0;
-  }
-  bitmapCache['trash'] = mask;
-
-  isCacheInitialized = true;
+  return loadingPromise;
 }
 
 export function isPointInShape(px: number, py: number, shape: Shape): boolean {
@@ -122,7 +131,7 @@ export function isPointInShape(px: number, py: number, shape: Shape): boolean {
 
   if (u < 0 || u >= 1 || v < 0 || v >= 1) return false;
 
-  const mask = bitmapCache[shape.type];
+  const mask = bitmapCache[shape.imagePath];
   if (!mask) return false;
 
   const mapX = Math.floor(u * BITMAP_SIZE);
@@ -135,7 +144,6 @@ export function isPointInShape(px: number, py: number, shape: Shape): boolean {
 }
 
 export function generateInitialLayout(width: number, height: number): Shape[] {
-  const count = 12;
   // Gorbagana brand palette — greens and purples
   const colors = [
     '#00ff00', // Neon Green — primary
@@ -145,17 +153,22 @@ export function generateInitialLayout(width: number, height: number): Shape[] {
     '#33ff66', // Light green
     '#7733ff', // Deep purple
     '#00ff88', // Mint
+    '#ffcc00', // Gold
+    '#ff0099', // Hot pink
   ];
 
   const minDim = Math.min(width, height);
-  const baseSize = minDim * 0.18;
+  const baseSize = minDim * 0.12; // Slightly smaller for more images
 
   const shapes: Shape[] = [];
-  for (let i = 0; i < count; i++) {
-    const sizeVariation = 0.6 + Math.random() * 0.8;
+
+  // Create one shape for each image
+  IMAGE_PATHS.forEach((imagePath, i) => {
+    const sizeVariation = 0.7 + Math.random() * 0.6;
     shapes.push({
       id: i,
-      type: 'trash',
+      type: imagePath,
+      imagePath: imagePath,
       x: Math.random() * width,
       y: Math.random() * height,
       dx: 0,
@@ -165,7 +178,11 @@ export function generateInitialLayout(width: number, height: number): Shape[] {
       rotationSpeed: 0,
       color: colors[i % colors.length],
     });
-  }
+  });
 
   return shapes;
+}
+
+export function getImageElement(imagePath: string): HTMLImageElement | null {
+  return imageCache[imagePath] || null;
 }

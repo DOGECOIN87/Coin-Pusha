@@ -1,16 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { generateInitialLayout, Shape, isPointInShape, ShapeType, initializeShapeCache } from '../utils/shapeMath';
+import { generateInitialLayout, Shape, getImageElement, initializeShapeCache } from '../utils/shapeMath';
 
 interface PegboardCanvasProps {
   gridSize?: number;
   holeRadius?: number;
-  enabledShapes?: ShapeType[];
 }
 
 export const PegboardCanvas: React.FC<PegboardCanvasProps> = ({
   gridSize = 10,
   holeRadius = 1.2,
-  enabledShapes,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -19,18 +17,22 @@ export const PegboardCanvas: React.FC<PegboardCanvasProps> = ({
 
   // Initialize shapes & cache
   useEffect(() => {
-    initializeShapeCache();
-    shapesRef.current = generateInitialLayout(window.innerWidth, window.innerHeight);
-    isDriftingRef.current = true;
+    const initialize = async () => {
+      await initializeShapeCache();
+      shapesRef.current = generateInitialLayout(window.innerWidth, window.innerHeight);
+      isDriftingRef.current = true;
 
-    // Start drifting immediately
-    shapesRef.current.forEach(shape => {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 0.5 + Math.random() * 1.2;
-      shape.dx = Math.cos(angle) * speed;
-      shape.dy = Math.sin(angle) * speed;
-      shape.rotationSpeed = (Math.random() - 0.5) * 0.015;
-    });
+      // Start drifting immediately
+      shapesRef.current.forEach(shape => {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.3 + Math.random() * 0.8; // Slower, more gentle floating
+        shape.dx = Math.cos(angle) * speed;
+        shape.dy = Math.sin(angle) * speed;
+        shape.rotationSpeed = (Math.random() - 0.5) * 0.01; // Slower rotation
+      });
+    };
+
+    initialize();
   }, []);
 
   // Handle Resize
@@ -75,9 +77,11 @@ export const PegboardCanvas: React.FC<PegboardCanvasProps> = ({
           shape.y += shape.dy;
           shape.rotation += shape.rotationSpeed;
 
+          // Bounce at edges
           if (shape.x < -shape.size / 2 || shape.x > width + shape.size / 2) shape.dx *= -1;
           if (shape.y < -shape.size / 2 || shape.y > height + shape.size / 2) shape.dy *= -1;
 
+          // Wrap around screen
           if (shape.x < -shape.size) shape.x = width + shape.size;
           if (shape.x > width + shape.size) shape.x = -shape.size;
           if (shape.y < -shape.size) shape.y = height + shape.size;
@@ -89,61 +93,57 @@ export const PegboardCanvas: React.FC<PegboardCanvasProps> = ({
       ctx.fillStyle = '#050505';
       ctx.fillRect(0, 0, width, height);
 
-      // Draw Grid
+      // Draw Pegboard Grid
       const cols = Math.ceil(width / gridSize);
       const rows = Math.ceil(height / gridSize);
-
-      const enabledSet = enabledShapes ? new Set(enabledShapes) : null;
 
       for (let iy = 0; iy < rows; iy++) {
         for (let ix = 0; ix < cols; ix++) {
           const px = ix * gridSize + gridSize / 2;
           const py = iy * gridSize + gridSize / 2;
 
-          let activeShape: Shape | null = null;
-
-          for (const shape of shapesRef.current) {
-            if (enabledSet && !enabledSet.has(shape.type)) continue;
-
-            const boundaryRadius = shape.size * 0.75;
-
-            if (
-              px < shape.x - boundaryRadius ||
-              px > shape.x + boundaryRadius ||
-              py < shape.y - boundaryRadius ||
-              py > shape.y + boundaryRadius
-            ) {
-              continue;
-            }
-
-            if (isPointInShape(px, py, shape)) {
-              activeShape = shape;
-              break;
-            }
-          }
-
           ctx.beginPath();
           ctx.arc(px, py, holeRadius, 0, Math.PI * 2);
-
-          if (activeShape) {
-            ctx.fillStyle = activeShape.color;
-            ctx.fill();
-          } else {
-            ctx.fillStyle = '#111111';
-            ctx.fill();
-          }
+          ctx.fillStyle = '#111111';
+          ctx.fill();
         }
       }
 
+      // Draw Floating Images on top
+      shapesRef.current.forEach(shape => {
+        const img = getImageElement(shape.imagePath);
+        if (!img || !img.complete) return;
+
+        ctx.save();
+
+        // Move to shape position
+        ctx.translate(shape.x, shape.y);
+
+        // Apply rotation
+        ctx.rotate(shape.rotation);
+
+        // Apply glow effect with shape color
+        ctx.shadowColor = shape.color;
+        ctx.shadowBlur = 20;
+        ctx.globalAlpha = 0.85;
+
+        // Draw image centered at current position
+        const halfSize = shape.size / 2;
+        ctx.drawImage(img, -halfSize, -halfSize, shape.size, shape.size);
+
+        ctx.restore();
+      });
+
       animationFrameId = requestAnimationFrame(render);
     };
+
 
     render();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [gridSize, holeRadius, enabledShapes]);
+  }, [gridSize, holeRadius]);
 
   return (
     <canvas
