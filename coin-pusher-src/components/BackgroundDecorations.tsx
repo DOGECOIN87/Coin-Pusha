@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
  * 
  * Displays Gorbagana-themed assets floating in the background
  * Creates a trashy, chaotic aesthetic matching the brand
+ * ALL ASSETS ARE FLOATING - NO FIXED POSITIONS
  */
 
 interface FloatingAsset {
@@ -26,6 +27,7 @@ export const BackgroundDecorations: React.FC = () => {
     // Define all available background assets
     const assetPaths = [
       '/assets/backgrounds/g-logo.png',
+      '/assets/backgrounds/gorbagana-text.png',
       '/assets/backgrounds/trash-character-1.png',
       '/assets/backgrounds/trash-character-2.png',
       '/assets/backgrounds/trash-character-3.png',
@@ -36,9 +38,9 @@ export const BackgroundDecorations: React.FC = () => {
       '/assets/backgrounds/chains.png',
     ];
 
-    // Generate random floating assets
+    // Generate random floating assets - MORE ASSETS FOR BETTER COVERAGE
     const generatedAssets: FloatingAsset[] = [];
-    const assetCount = 15; // Number of floating assets
+    const assetCount = 25; // Increased from 15 to 25 for more coverage
 
     for (let i = 0; i < assetCount; i++) {
       const randomAsset = assetPaths[Math.floor(Math.random() * assetPaths.length)];
@@ -48,11 +50,11 @@ export const BackgroundDecorations: React.FC = () => {
         src: randomAsset,
         x: Math.random() * 100, // Random X position (0-100%)
         y: Math.random() * 100, // Random Y position (0-100%)
-        size: 50 + Math.random() * 150, // Random size (50-200px)
+        size: 60 + Math.random() * 180, // Random size (60-240px) - increased range
         rotation: Math.random() * 360, // Random rotation
-        duration: 20 + Math.random() * 30, // Float duration (20-50s)
+        duration: 15 + Math.random() * 35, // Float duration (15-50s) - faster movement
         delay: Math.random() * 10, // Random delay (0-10s)
-        opacity: 0.05 + Math.random() * 0.15, // Low opacity (0.05-0.2)
+        opacity: 0.08 + Math.random() * 0.17, // Opacity (0.08-0.25) - slightly more visible
       });
     }
 
@@ -61,16 +63,7 @@ export const BackgroundDecorations: React.FC = () => {
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {/* Gorbagana Text Logo - Fixed position */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 opacity-10">
-        <img 
-          src="/assets/backgrounds/gorbagana-text.png" 
-          alt="Gorbagana"
-          className="w-64 sm:w-96 h-auto"
-        />
-      </div>
-
-      {/* Floating Assets */}
+      {/* ALL Floating Assets - No fixed positions */}
       {assets.map((asset) => (
         <div
           key={asset.id}
@@ -96,56 +89,6 @@ export const BackgroundDecorations: React.FC = () => {
           />
         </div>
       ))}
-
-      {/* Chains on sides */}
-      <div className="absolute left-4 top-0 bottom-0 flex items-center opacity-10">
-        <img 
-          src="/assets/backgrounds/chains.png" 
-          alt=""
-          className="h-full w-auto object-cover"
-          style={{ objectFit: 'repeat-y' }}
-        />
-      </div>
-      <div className="absolute right-4 top-0 bottom-0 flex items-center opacity-10">
-        <img 
-          src="/assets/backgrounds/chains.png" 
-          alt=""
-          className="h-full w-auto object-cover"
-          style={{ objectFit: 'repeat-y' }}
-        />
-      </div>
-
-      {/* Corner G logos */}
-      <div className="absolute top-4 left-4 opacity-5">
-        <img 
-          src="/assets/backgrounds/g-logo.png" 
-          alt=""
-          className="w-24 h-24 sm:w-32 sm:h-32"
-        />
-      </div>
-      <div className="absolute bottom-4 right-4 opacity-5 rotate-180">
-        <img 
-          src="/assets/backgrounds/g-logo.png" 
-          alt=""
-          className="w-24 h-24 sm:w-32 sm:h-32"
-        />
-      </div>
-
-      {/* Trash bins in corners */}
-      <div className="absolute bottom-4 left-4 opacity-8">
-        <img 
-          src="/assets/backgrounds/trash-bin.png" 
-          alt=""
-          className="w-16 h-16 sm:w-20 sm:h-20"
-        />
-      </div>
-      <div className="absolute top-4 right-4 opacity-8">
-        <img 
-          src="/assets/backgrounds/trash-bin.png" 
-          alt=""
-          className="w-16 h-16 sm:w-20 sm:h-20"
-        />
-      </div>
     </div>
   );
 };
