@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { PHYSICS, DIMENSIONS, COLORS, TRASHCOIN } from './constants';
 import { GameConfig, GameEventCallback } from '../types';
+import { soundManager } from '../services/soundManager';
 
 export class GameEngine {
   // Config
@@ -454,6 +455,9 @@ export class GameEngine {
     }
     this.updateGameState();
 
+    // Play coin drop sound
+    soundManager.play('coin_drop');
+
     const z = -DIMENSIONS.PLAYFIELD_LENGTH / 2 + 1;
     if (Math.random() < TRASHCOIN.SPAWN_CHANCE && this.trashcoinBodies.length < TRASHCOIN.MAX_COUNT) {
       this.spawnTrashcoin(normalizedX, 4, z);
@@ -475,10 +479,13 @@ export class GameEngine {
   }
 
   public bump() {
-    // Apply fee
-    this.balance -= 25;
-    this.netProfit -= 25;
+    // Apply fee (50 JUNK)
+    this.balance -= 50;
+    this.netProfit -= 50;
     this.updateGameState();
+
+    // Play bump sound
+    soundManager.play('bump');
 
     // Bump physics parameters
     // We want a strong vertical pop with some chaotic lateral movement
@@ -625,6 +632,13 @@ export class GameEngine {
     this.balance += value;
     this.netProfit += value;
 
+    // Play collection sound
+    if (isTrashcoin) {
+      soundManager.play('trashcoin_collect');
+    } else {
+      soundManager.play('coin_collect');
+    }
+
     const now = performance.now();
     if (now - this.lastCollectionTime > 5000) {
       this.coinsCollectedRecently = 0;
@@ -636,6 +650,8 @@ export class GameEngine {
       this.balance += 5;
       this.netProfit += 5;
       this.coinsCollectedRecently = 0;
+      // Play win streak sound
+      soundManager.play('win_streak');
     }
     this.updateGameState();
   }

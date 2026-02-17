@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GameState } from '../types';
 import { useWallet } from '../context/WalletContext';
 import type { GameEngine } from '../game/GameEngine';
+import { HighScoreBoard } from './HighScoreBoard';
+import { SoundControl } from './SoundControl';
+import { soundManager } from '../services/soundManager';
 
 interface OverlayProps {
   state: GameState;
@@ -23,6 +26,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   const [showWalletMenu, setShowWalletMenu] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [txStatus, setTxStatus] = useState<'idle' | 'signing' | 'broadcasting' | 'confirmed' | 'error'>('idle');
+  const [showHighScores, setShowHighScores] = useState(false);
 
   useEffect(() => {
     if (state.balance > 0) {
@@ -44,12 +48,20 @@ export const Overlay: React.FC<OverlayProps> = ({
   }, [showWalletMenu]);
 
   const handleBumpClick = async () => {
-    if (txStatus !== 'idle') return;
+    // Prevent multiple clicks during transaction processing
+    if (txStatus !== 'idle') {
+      console.log('Transaction already in progress, ignoring click');
+      return;
+    }
     if (!wallet.isConnected) {
       alert('Please connect your Solana wallet first');
       setShowWalletMenu(true);
       return;
     }
+    
+    // Initialize sound if needed
+    soundManager.initialize();
+    
     try {
       setTxStatus('signing');
       setTimeout(() => {
@@ -68,6 +80,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   };
 
   const handleClosePopup = () => {
+    soundManager.play('ui_close');
     setIsDismissed(true);
     setTxStatus('idle');
   };
@@ -226,7 +239,7 @@ export const Overlay: React.FC<OverlayProps> = ({
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <span className="text-gray-400">Bump</span>
-              <span className="text-fuchsia-400 font-mono font-bold">-25</span>
+              <span className="text-fuchsia-400 font-mono font-bold">-50</span>
             </div>
             <div className="h-4 w-px bg-green-500/30 shrink-0" />
             <div className="flex items-center gap-1.5 shrink-0">
@@ -246,7 +259,25 @@ export const Overlay: React.FC<OverlayProps> = ({
         {/* Controls */}
         <div className="flex flex-wrap gap-1.5 sm:gap-3 pointer-events-auto">
             <button
-                onClick={onPauseToggle}
+                onClick={() => {
+                  soundManager.initialize();
+                  soundManager.play('ui_open');
+                  setShowHighScores(true);
+                }}
+                className="group h-9 sm:h-12 min-w-[72px] sm:min-w-[120px] bg-cyan-950/30 border border-cyan-500/30 hover:bg-cyan-900/50 hover:border-cyan-400 transition-all skew-x-[-15deg] backdrop-blur-sm"
+            >
+                <div className="skew-x-[15deg] flex items-center justify-center h-full px-2 sm:px-0">
+                    <span className="font-heading text-[8px] sm:text-[10px] text-cyan-200 font-bold tracking-[0.15em] sm:tracking-[0.2em] group-hover:text-white group-hover:drop-shadow-[0_0_5px_#00FFFF] uppercase">
+                        Scores
+                    </span>
+                </div>
+            </button>
+            <button
+                onClick={() => {
+                  soundManager.initialize();
+                  soundManager.play('button_click');
+                  onPauseToggle();
+                }}
                 className="group h-9 sm:h-12 min-w-[72px] sm:min-w-[120px] bg-green-950/30 border border-green-500/30 hover:bg-green-900/50 hover:border-green-400 transition-all skew-x-[-15deg] backdrop-blur-sm"
             >
                 <div className="skew-x-[15deg] flex items-center justify-center h-full px-2 sm:px-0">
@@ -257,7 +288,11 @@ export const Overlay: React.FC<OverlayProps> = ({
             </button>
 
             <button
-                onClick={onReset}
+                onClick={() => {
+                  soundManager.initialize();
+                  soundManager.play('button_click');
+                  onReset();
+                }}
                 className="group h-9 sm:h-12 min-w-[72px] sm:min-w-[120px] bg-purple-950/30 border border-purple-500/30 hover:bg-purple-900/50 hover:border-purple-400 transition-all skew-x-[-15deg] backdrop-blur-sm"
             >
                  <div className="skew-x-[15deg] flex items-center justify-center h-full px-2 sm:px-0">
@@ -267,6 +302,11 @@ export const Overlay: React.FC<OverlayProps> = ({
                  </div>
             </button>
 
+        </div>
+
+        {/* Sound Control */}
+        <div className="pointer-events-auto">
+          <SoundControl />
         </div>
 
         {/* Footer Info */}
@@ -394,6 +434,9 @@ export const Overlay: React.FC<OverlayProps> = ({
             </div>
         </div>
       )}
+
+      {/* High Score Board Modal */}
+      <HighScoreBoard isOpen={showHighScores} onClose={() => setShowHighScores(false)} />
 
     </div>
   );
