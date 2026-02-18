@@ -2,7 +2,7 @@ export type ShapeType = string;
 
 // List of all available images to use as floating shapes
 export const IMAGE_PATHS = [
-  '/1000609168.jpg',
+  '/edu_srch_celebrate_the_50th_anniversary_apollo11.webp',
   '/chatgpt-image.png',
   '/gorby-transparent.png',
   '/logo-incinerator.jpg',

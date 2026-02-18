@@ -1,5 +1,5 @@
 {
   "name": "JUNK Pusher",
-  "description": "A 3D JUNK coin-pusher arcade game on the Gorbagana blockchain, powered by Three.js and Rapier physics.",
+  "description": "A 3D JUNK pusher arcade game on the Gorbagana blockchain, powered by Three.js and Rapier physics.",
   "requestFramePermissions": []
 }

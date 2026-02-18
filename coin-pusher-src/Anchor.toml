@@ -6,10 +6,10 @@ cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 
 [programs.devnet]
-coin-pusher-game = "11111111111111111111111111111111"
+junk-pusher-game = "11111111111111111111111111111111"
 
 [programs.gorbagana]
-coin-pusher-game = "11111111111111111111111111111111"
+junk-pusher-game = "11111111111111111111111111111111"
 
 [registry]
 url = "https://api.apr.dev"

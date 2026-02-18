@@ -2,7 +2,7 @@ import { PublicKey, Transaction, TransactionInstruction, SystemProgram } from '@
 import * as SolanaService from './solanaService';
 
 /**
- * Transaction builder for Coin Pusher game interactions on Gorbagana.
+ * Transaction builder for Junk Pusher game interactions on Gorbagana.
  * Builds real Anchor-compatible instructions.
  */
 
