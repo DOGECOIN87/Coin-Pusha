@@ -15,6 +15,7 @@ import Gorid from './pages/Gorid';
 import Bridge from './pages/Bridge';
 import JunkPusherPage from './pages/JunkPusher';
 import Dex from './pages/Dex';
+import VanityGenerator from './pages/VanityGenerator';
 
 const App: React.FC = () => {
   const wallets = useMemo(() => [new BackpackWalletAdapter()], []);
@@ -37,6 +38,7 @@ const App: React.FC = () => {
                     <Route path="/bridge" element={<Bridge />} />
                     <Route path="/junk-pusher" element={<JunkPusherPage />} />
                     <Route path="/dex" element={<Dex />} />
+                    <Route path="/vanity" element={<VanityGenerator />} />
                   </Routes>
                 </main>
                 <ActivityTicker />

@@ -112,6 +112,7 @@ const Navbar: React.FC = () => {
     { name: 'Bridge', path: '/bridge' },
     { name: 'JUNKPUSHER', path: '/junk-pusher' },
     { name: 'DEX', path: '/dex' },
+    { name: 'Vanity', path: '/vanity' },
     { name: 'Docs', path: '/docs' },
   ];
 

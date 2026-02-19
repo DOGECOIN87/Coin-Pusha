@@ -1,0 +1,142 @@
+Programs
+Discover and explore programs currently indexed on Gorbagana Chain
+
+AMM
+3 programs
+
+Trashbin Dex SAMM
+AMM
+Program ID
+WTzkPUoprVx7PDc1tfKA5sS7k1ynCgU89WtwZhksHX5
+Copy Program ID
+Meteora DAMMv2 Fork
+AMM
+Program ID
+cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG
+Copy Program ID
+Meteora Bonding Curve Fork
+AMM
+Program ID
+dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN
+Copy Program ID
+NFT
+1 program
+
+Metaplex Token Metadata
+NFT
+Program ID
+metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s
+Copy Program ID
+SNS
+1 program
+
+Solana Name Service
+SNS
+Program ID
+namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX
+Copy Program ID
+Stake
+1 program
+
+Stake Program
+Stake
+Program ID
+Stake11111111111111111111111111111111111111
+Copy Program ID
+System
+5 programs
+
+System Program
+System
+Program ID
+11111111111111111111111111111111
+Copy Program ID
+Config Program
+System
+Program ID
+Config1111111111111111111111111111111111111
+Copy Program ID
+BPF Loader Upgradeable
+System
+Program ID
+BPFLoaderUpgradeab1e11111111111111111111111
+Copy Program ID
+BPF Loader
+System
+Program ID
+BPFLoader2111111111111111111111111111111111
+Copy Program ID
+BPF Loader (v1)
+System
+Program ID
+BPFLoader1111111111111111111111111111111111
+Copy Program ID
+Sysvar
+9 programs
+
+Clock
+Sysvar
+Program ID
+SysvarC1ock11111111111111111111111111111111
+Copy Program ID
+Rent
+Sysvar
+Program ID
+SysvarRent111111111111111111111111111111111
+Copy Program ID
+Slot Hashes
+Sysvar
+Program ID
+SysvarS1otHashes111111111111111111111111111
+Copy Program ID
+Stake History
+Sysvar
+Program ID
+SysvarStakeHistory1111111111111111111111111
+Copy Program ID
+Epoch Schedule
+Sysvar
+Program ID
+SysvarEpochSchedu1e111111111111111111111111
+Copy Program ID
+Fees
+Sysvar
+Program ID
+SysvarFees111111111111111111111111111111111
+Copy Program ID
+Recent Block Hashes
+Sysvar
+Program ID
+SysvarRecentB1ockHashes11111111111111111111
+Copy Program ID
+Rewards
+Sysvar
+Program ID
+SysvarRewards111111111111111111111111111111
+Copy Program ID
+Instructions
+Sysvar
+Program ID
+SysvarInstructions1111111111111111111111111
+Copy Program ID
+Token
+2 programs
+
+Token Program
+Token
+Program ID
+TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+Copy Program ID
+Associated Token Account Program
+Token
+Program ID
+ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL
+Copy Program ID
+Vote
+1 program
+
+Vote Program
+Vote
+Program ID
+Vote111111111111111111111111111111111111111
+Copy Program ID
