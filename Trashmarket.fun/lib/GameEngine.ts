@@ -66,6 +66,7 @@ export class GameEngine {
     // 1. Init Physics
     await RAPIER.init();
     this.world = new RAPIER.World(PHYSICS.GRAVITY);
+    this.world.numSolverIterations = 8;
 
     // 2. Init Three.js
     this.scene = new THREE.Scene();
@@ -221,7 +222,8 @@ export class GameEngine {
     const floorBody = this.world.createRigidBody(floorBodyDesc);
     this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(pfWidth / 2, pfThickness / 2, pfLength / 2)
-        .setFriction(PHYSICS.COIN_FRICTION), // Match coin friction for consistent sliding
+        .setFriction(PHYSICS.COIN_FRICTION) // Match coin friction for consistent sliding
+        .setContactSkin(0.015),
       floorBody
     );
 
@@ -398,14 +400,14 @@ export class GameEngine {
   public spawnCoin(x: number, y: number, z: number) {
     if (this.coinBodies.length >= PHYSICS.MAX_COINS) return;
 
-    // Add slight random variation to drop position and rotation
-    // This helps physics engine resolve contacts more naturally
-    const randRotX = (Math.random() - 0.5) * 0.5;
-    const randRotZ = (Math.random() - 0.5) * 0.5;
+    // Build a proper unit quaternion from random Euler tilt angles
+    const tiltX = (Math.random() - 0.5) * 0.5;
+    const tiltZ = (Math.random() - 0.5) * 0.5;
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(tiltX, 0, tiltZ));
 
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(x, y, z)
-      .setRotation({ x: randRotX, y: 0, z: randRotZ, w: 1.0 }) // Initial slight tilt
+      .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
       .setLinearDamping(PHYSICS.COIN_LINEAR_DAMPING)
       .setAngularDamping(PHYSICS.COIN_ANGULAR_DAMPING)
       .setCcdEnabled(true); // Critical for thin coins
@@ -414,7 +416,8 @@ export class GameEngine {
     const collider = RAPIER.ColliderDesc.cylinder(PHYSICS.COIN_HEIGHT / 2, PHYSICS.COIN_RADIUS)
       .setFriction(PHYSICS.COIN_FRICTION)
       .setRestitution(PHYSICS.COIN_RESTITUTION)
-      .setDensity(PHYSICS.COIN_DENSITY); // Heavy coins
+      .setDensity(PHYSICS.COIN_DENSITY)
+      .setContactSkin(0.015);
     this.world.createCollider(collider, body);
 
     this.coinBodies.push({ body, id: body.handle });
@@ -423,12 +426,13 @@ export class GameEngine {
   private spawnTrashcoin(x: number, y: number, z: number) {
     if (this.trashcoinBodies.length >= TRASHCOIN.MAX_COUNT) return;
 
-    const randRotX = (Math.random() - 0.5) * 0.5;
-    const randRotZ = (Math.random() - 0.5) * 0.5;
+    const tiltX = (Math.random() - 0.5) * 0.5;
+    const tiltZ = (Math.random() - 0.5) * 0.5;
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(tiltX, 0, tiltZ));
 
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(x, y, z)
-      .setRotation({ x: randRotX, y: 0, z: randRotZ, w: 1.0 })
+      .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
       .setLinearDamping(PHYSICS.COIN_LINEAR_DAMPING)
       .setAngularDamping(PHYSICS.COIN_ANGULAR_DAMPING)
       .setCcdEnabled(true);
@@ -440,7 +444,8 @@ export class GameEngine {
     )
       .setFriction(PHYSICS.COIN_FRICTION)
       .setRestitution(PHYSICS.COIN_RESTITUTION)
-      .setDensity(PHYSICS.COIN_DENSITY);
+      .setDensity(PHYSICS.COIN_DENSITY)
+      .setContactSkin(0.015);
     this.world.createCollider(collider, body);
 
     this.trashcoinBodies.push({ body, id: body.handle });
@@ -457,6 +462,10 @@ export class GameEngine {
 
     // Play coin drop sound
     soundManager.play('coin_drop');
+
+    if (this.balance <= 0 && !GameEngine.DEBUG_AUTOPLAY) {
+      soundManager.play('out_of_tokens');
+    }
 
     const z = -DIMENSIONS.PLAYFIELD_LENGTH / 2 + 1;
     if (Math.random() < TRASHCOIN.SPAWN_CHANCE && this.trashcoinBodies.length < TRASHCOIN.MAX_COUNT) {
@@ -486,6 +495,10 @@ export class GameEngine {
 
     // Play bump sound
     soundManager.play('bump');
+
+    if (this.balance <= 0) {
+      soundManager.play('out_of_tokens');
+    }
 
     // Bump physics parameters
     // We want a strong vertical pop with some chaotic lateral movement

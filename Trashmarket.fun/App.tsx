@@ -6,7 +6,7 @@ import { NetworkProvider } from './contexts/NetworkContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { DynamicConnectionProvider } from './contexts/DynamicConnectionProvider';
 import Navbar from './components/Navbar';
-import PriceTicker from './components/PriceTicker';
+import PriceTicker, { ActivityTicker } from './components/PriceTicker';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Collection from './pages/Collection';
@@ -39,6 +39,7 @@ const App: React.FC = () => {
                     <Route path="/dex" element={<Dex />} />
                   </Routes>
                 </main>
+                <ActivityTicker />
                 <Footer />
               </div>
             </Router>

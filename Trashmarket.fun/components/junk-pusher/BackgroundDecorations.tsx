@@ -38,9 +38,9 @@ export const BackgroundDecorations: React.FC = () => {
       '/assets/backgrounds/chains.png',
     ];
 
-    // Generate random floating assets - MORE ASSETS FOR BETTER COVERAGE
+    // Generate random floating assets
     const generatedAssets: FloatingAsset[] = [];
-    const assetCount = 25; // Increased from 15 to 25 for more coverage
+    const assetCount = 10; // Reduced for performance
 
     for (let i = 0; i < assetCount; i++) {
       const randomAsset = assetPaths[Math.floor(Math.random() * assetPaths.length)];
@@ -62,7 +62,7 @@ export const BackgroundDecorations: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0" style={{ contain: 'strict' }}>
       {/* ALL Floating Assets - No fixed positions */}
       {assets.map((asset) => (
         <div
@@ -77,15 +77,14 @@ export const BackgroundDecorations: React.FC = () => {
             transform: `rotate(${asset.rotation}deg)`,
             animationDuration: `${asset.duration}s`,
             animationDelay: `${asset.delay}s`,
+            willChange: 'transform',
           }}
         >
-          <img 
-            src={asset.src} 
+          <img
+            src={asset.src}
             alt=""
             className="w-full h-full object-contain"
-            style={{
-              filter: 'blur(1px)',
-            }}
+            loading="lazy"
           />
         </div>
       ))}

@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GameEngine } from '../../lib/GameEngine';
 import { Overlay } from './Overlay';
-import { PegboardCanvas } from './PegboardCanvas';
 import { GameState } from '../../types/types';
 import { useGameWallet } from './WalletAdapter';
 import { setupAutoSave, loadGameState, clearGameState, hasRecoverableState, getRecoveryMessage } from '../../lib/statePersistence';
 import { soundManager } from '../../lib/soundManager';
-import { BackgroundDecorations } from './BackgroundDecorations';
 
 const JunkPusherGame: React.FC = () => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const gameCanvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<GameEngine | null>(null);
     const wallet = useGameWallet();
 
@@ -64,26 +62,53 @@ const JunkPusherGame: React.FC = () => {
     }, [gameState, wallet.publicKey]);
 
     useEffect(() => {
-        if (!canvasRef.current) return;
+        if (!gameCanvasRef.current) return;
 
+        const canvas = gameCanvasRef.current;
+        const width = canvas.clientWidth || window.innerWidth;
+        const height = canvas.clientHeight || window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        if (width === 0 || height === 0) return;
+
+        let disposed = false;
         const engine = new GameEngine({
             debugControls: true,
             debugFps: true
         });
 
-        engine.initialize(canvasRef.current, handleUpdate).then(() => {
-            engineRef.current = engine;
+        engine.initialize(canvas, handleUpdate).then(() => {
+            if (!disposed) {
+                engineRef.current = engine;
+            } else {
+                engine.cleanup();
+            }
+        }).catch((err) => {
+            console.error('GameEngine init failed:', err);
         });
 
+        const handleResize = () => {
+            if (engineRef.current) {
+                const w = canvas.clientWidth || window.innerWidth;
+                const h = canvas.clientHeight || window.innerHeight;
+                engineRef.current.resize(w, h);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+
         return () => {
-            engine.dispose();
+            disposed = true;
+            window.removeEventListener('resize', handleResize);
+            engineRef.current = null;
+            engine.cleanup();
         };
     }, [handleUpdate]);
 
     const handleDropCoin = () => {
         if (engineRef.current && !gameState.isPaused) {
-            engineRef.current.dropCoin();
-            soundManager.play('drop');
+            const x = (Math.random() - 0.5) * 6;
+            engineRef.current.dropUserCoin(x);
         }
     };
 
@@ -110,16 +135,28 @@ const JunkPusherGame: React.FC = () => {
 
     const handlePauseToggle = () => {
         if (engineRef.current) {
-            const newPausedState = !gameState.isPaused;
-            engineRef.current.setPaused(newPausedState);
-            setGameState(prev => ({ ...prev, isPaused: newPausedState }));
+            engineRef.current.togglePause();
         }
     };
 
+    const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!engineRef.current || gameState.isPaused) return;
+        const canvas = gameCanvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        engineRef.current.dropCoinAtRaycast(ndcX, ndcY);
+    };
+
     return (
-        <div className="relative w-full h-screen overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-black">
-            <BackgroundDecorations />
-            <PegboardCanvas canvasRef={canvasRef} />
+        <div className="relative w-full h-screen overflow-hidden bg-black">
+            <canvas
+                ref={gameCanvasRef}
+                onClick={handleCanvasClick}
+                className="absolute inset-0 w-full h-full"
+                style={{ cursor: 'crosshair' }}
+            />
             <Overlay
                 gameState={gameState}
                 onDropCoin={handleDropCoin}

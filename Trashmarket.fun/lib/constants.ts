@@ -7,7 +7,7 @@ export const PHYSICS = {
   PUSHER_PERIOD: 4.0, // Slower, heavier machine feel
   COIN_FRICTION: 0.3, // Lower friction allows sliding/avalanches
   COIN_RESTITUTION: 0.2, // Metallic clink
-  COIN_LINEAR_DAMPING: 0.1,
+  COIN_LINEAR_DAMPING: 0.4,
   COIN_ANGULAR_DAMPING: 1.5, // Stop spinning relatively fast
   MAX_COINS: 800,
   COIN_DENSITY: 5.0, // High density for weight

@@ -5,7 +5,7 @@
  * No external audio files needed - all sounds are synthesized
  */
 
-export type SoundType = 
+export type SoundType =
   | 'coin_drop'
   | 'coin_land'
   | 'coin_collect'
@@ -15,13 +15,15 @@ export type SoundType =
   | 'win_streak'
   | 'game_over'
   | 'ui_open'
-  | 'ui_close';
+  | 'ui_close'
+  | 'out_of_tokens';
 
 class SoundManager {
   private audioContext: AudioContext | null = null;
   private masterVolume = 0.3;
   private isMuted = false;
   private isInitialized = false;
+  private outOfTokensBuffer: AudioBuffer | null = null;
 
   /**
    * Initialize audio context (must be called after user interaction)
@@ -32,6 +34,7 @@ class SoundManager {
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       this.isInitialized = true;
+      this.preloadOutOfTokens();
       console.log('[SoundManager] Initialized');
     } catch (error) {
       console.error('[SoundManager] Failed to initialize:', error);
@@ -81,6 +84,9 @@ class SoundManager {
         break;
       case 'ui_close':
         this.playUIClose();
+        break;
+      case 'out_of_tokens':
+        this.playOutOfTokens();
         break;
     }
   }
@@ -381,6 +387,29 @@ class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.15);
+  }
+
+  private preloadOutOfTokens(): void {
+    if (!this.audioContext) return;
+    fetch('/fawwwwwwwk.mp3')
+      .then(res => res.arrayBuffer())
+      .then(buf => this.audioContext!.decodeAudioData(buf))
+      .then(decoded => { this.outOfTokensBuffer = decoded; })
+      .catch(err => console.warn('[SoundManager] Failed to load out_of_tokens sound:', err));
+  }
+
+  private playOutOfTokens(): void {
+    if (!this.audioContext || !this.outOfTokensBuffer) return;
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = this.outOfTokensBuffer;
+
+    const gain = this.audioContext.createGain();
+    gain.gain.setValueAtTime(this.masterVolume, this.audioContext.currentTime);
+
+    source.connect(gain);
+    gain.connect(this.audioContext.destination);
+    source.start();
   }
 
   /**

@@ -110,9 +110,9 @@ const Navbar: React.FC = () => {
     { name: 'Collections', path: '/' },
     { name: 'GorID', path: '/gorid' },
     { name: 'Bridge', path: '/bridge' },
-    { name: '🎮 Junk Pusher', path: '/junk-pusher' },
+    { name: 'JUNKPUSHER', path: '/junk-pusher' },
     { name: 'DEX', path: '/dex' },
-    { name: 'Docs / Brand', path: '/docs' },
+    { name: 'Docs', path: '/docs' },
   ];
 
   return (
